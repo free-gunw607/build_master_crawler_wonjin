@@ -27,7 +27,7 @@ jobs:
 
           if [ -z "${last_created}" ]; then
             echo "status=missing" >> "$GITHUB_OUTPUT"
-            echo "message=No schedule run has ever been created for ${workflow_file}." >> "$GITHUB_OUTPUT"
+            echo "message=[크론 누락] ${workflow_file}의 schedule 실행 이력이 아직 1건도 없습니다." >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -36,10 +36,10 @@ jobs:
 
           if [ "${age_minutes}" -gt 90 ]; then
             echo "status=stale" >> "$GITHUB_OUTPUT"
-            echo "message=Last schedule run is ${age_minutes} minutes old (created_at=${last_created})." >> "$GITHUB_OUTPUT"
+            echo "message=[크론 지연] 마지막 schedule 실행이 ${age_minutes}분 전입니다. (created_at=${last_created})" >> "$GITHUB_OUTPUT"
           else
             echo "status=ok" >> "$GITHUB_OUTPUT"
-            echo "message=Last schedule run age is ${age_minutes} minutes (created_at=${last_created})." >> "$GITHUB_OUTPUT"
+            echo "message=[정상] 마지막 schedule 실행은 ${age_minutes}분 전입니다. (created_at=${last_created})" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Notify Telegram on missing/stale schedule
@@ -50,7 +50,7 @@ jobs:
           MESSAGE: ${{ steps.check.outputs.message }}
         run: |
           set -euo pipefail
-          text="[ALERT] ${MESSAGE} repo=${{ github.repository }} workflow=hourly_notices.yml"
+          text="🚨 GitHub Actions 스케줄 감시 알림\n${MESSAGE}\nrepo=${{ github.repository }}\nworkflow=hourly_notices.yml"
           curl -sS -X POST \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
@@ -61,4 +61,3 @@ jobs:
         run: |
           echo "${{ steps.check.outputs.message }}"
           exit 1
-
