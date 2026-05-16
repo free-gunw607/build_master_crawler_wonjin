@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
+import re
 from typing import Iterable
 
 import gspread
@@ -31,6 +32,9 @@ SOURCE_BOARD_URL = {
 class Notice:
     source: str
     notice_id: str
+    raw_id_type: str
+    raw_id_value: str
+    id_sort_num: int
     title: str
     posted_at: str
     deadline_at: str
@@ -42,12 +46,19 @@ class Notice:
     views: str
 
     def key(self) -> tuple[str, str]:
-        return (self.source, self.notice_id)
+        # Raw-coupled identity rule:
+        # - never strip prefixes like BN-
+        # - never cast to int for identity
+        # - key is always source + raw id value
+        return (self.source, self.raw_id_value)
 
     def to_row(self, collected_at_utc: str) -> list[str]:
         return [
             self.source,
             self.notice_id,
+            self.raw_id_type,
+            self.raw_id_value,
+            self.id_sort_num,
             self.title,
             self.posted_at,
             self.deadline_at,
@@ -75,6 +86,19 @@ def _parse_dot_date(s: str) -> date | None:
 
 def _clean_text(s: str) -> str:
     return " ".join((s or "").strip().split())
+
+
+def _id_sort_num(source: str, raw_id: str) -> int:
+    raw = (raw_id or "").strip()
+    if not raw:
+        return -1
+    if source == "LH":
+        m = re.search(r"(\d+)$", raw)
+        return int(m.group(1)) if m else -1
+    if source in ("i-SH", "GH"):
+        digits = re.sub(r"\D", "", raw)
+        return int(digits) if digits else -1
+    return -1
 
 
 def crawl_lh(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
@@ -151,6 +175,9 @@ def crawl_lh(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
                 Notice(
                     source="LH",
                     notice_id=notice_id,
+                    raw_id_type="panId",
+                    raw_id_value=notice_id,
+                    id_sort_num=_id_sort_num("LH", notice_id),
                     title=title,
                     posted_at=posted,
                     deadline_at=deadline,
@@ -249,6 +276,9 @@ def crawl_ish(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
                 Notice(
                     source="i-SH",
                     notice_id=seq,
+                    raw_id_type="seq",
+                    raw_id_value=seq,
+                    id_sort_num=_id_sort_num("i-SH", seq),
                     title=title,
                     posted_at=posted,
                     deadline_at="",
@@ -337,6 +367,9 @@ def crawl_gh(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
                 Notice(
                     source="GH",
                     notice_id=ann_seq,
+                    raw_id_type="annSeq",
+                    raw_id_value=ann_seq,
+                    id_sort_num=_id_sort_num("GH", ann_seq),
                     title=title,
                     posted_at=posted,
                     deadline_at=deadline,
@@ -369,6 +402,9 @@ def to_df(records: Iterable[Notice]) -> pd.DataFrame:
         {
             "source": n.source,
             "notice_id": n.notice_id,
+            "raw_id_type": n.raw_id_type,
+            "raw_id_value": n.raw_id_value,
+            "id_sort_num": n.id_sort_num,
             "title": n.title,
             "posted_at": n.posted_at,
             "deadline_at": n.deadline_at,
@@ -408,6 +444,9 @@ def load_notices_from_xlsx(path: str) -> list[Notice]:
                 Notice(
                     source="LH",
                     notice_id=str(row.get("panId", "")).strip(),
+                    raw_id_type="panId",
+                    raw_id_value=str(row.get("panId", "")).strip(),
+                    id_sort_num=_id_sort_num("LH", str(row.get("panId", "")).strip()),
                     title=str(row.get("공고명", "")).strip(),
                     posted_at="" if pd.isna(row.get("공고일")) else pd.to_datetime(row.get("공고일")).strftime("%Y-%m-%d"),
                     deadline_at="" if pd.isna(row.get("마감일")) else pd.to_datetime(row.get("마감일")).strftime("%Y-%m-%d"),
@@ -426,6 +465,9 @@ def load_notices_from_xlsx(path: str) -> list[Notice]:
                 Notice(
                     source="i-SH",
                     notice_id=str(row.get("seq", "")).strip(),
+                    raw_id_type="seq",
+                    raw_id_value=str(row.get("seq", "")).strip(),
+                    id_sort_num=_id_sort_num("i-SH", str(row.get("seq", "")).strip()),
                     title=str(row.get("제목", "")).strip(),
                     posted_at="" if pd.isna(row.get("등록일")) else pd.to_datetime(row.get("등록일")).strftime("%Y-%m-%d"),
                     deadline_at="",
@@ -444,6 +486,9 @@ def load_notices_from_xlsx(path: str) -> list[Notice]:
                 Notice(
                     source="GH",
                     notice_id=str(row.get("annSeq", "")).strip(),
+                    raw_id_type="annSeq",
+                    raw_id_value=str(row.get("annSeq", "")).strip(),
+                    id_sort_num=_id_sort_num("GH", str(row.get("annSeq", "")).strip()),
                     title=str(row.get("공고명", "")).strip(),
                     posted_at="" if pd.isna(row.get("공고일")) else pd.to_datetime(row.get("공고일")).strftime("%Y-%m-%d"),
                     deadline_at="" if pd.isna(row.get("마감일")) else pd.to_datetime(row.get("마감일")).strftime("%Y-%m-%d"),
@@ -483,13 +528,35 @@ def load_existing_keys(ws: gspread.Worksheet) -> set[tuple[str, str]]:
     vals = ws.get_all_values()
     if len(vals) <= 1:
         return set()
+
+    header = vals[0]
+    idx_source = 0
+    idx_notice = 1
+    idx_raw = 3
+    if "source" in header:
+        idx_source = header.index("source")
+    if "notice_id" in header:
+        idx_notice = header.index("notice_id")
+    if "raw_id_value" in header:
+        idx_raw = header.index("raw_id_value")
+
     out: set[tuple[str, str]] = set()
     for row in vals[1:]:
-        if len(row) < 2:
+        if len(row) <= max(idx_source, idx_notice):
             continue
-        src, nid = row[0].strip(), row[1].strip()
-        if src and nid:
-            out.add((src, nid))
+        src = row[idx_source].strip()
+        if src == "source":
+            continue
+        raw = row[idx_raw].strip() if len(row) > idx_raw else ""
+        # Backward compatibility: old seeded rows may be shifted and have posted_at in raw_id_value column.
+        if _parse_dot_date(raw):
+            raw = ""
+        notice = row[idx_notice].strip()
+        key_id = raw or notice
+        if key_id in ("notice_id", "raw_id_value", "posted_at"):
+            continue
+        if src and key_id:
+            out.add((src, key_id))
     return out
 
 
@@ -536,6 +603,9 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
         [
             "source",
             "notice_id",
+            "raw_id_type",
+            "raw_id_value",
+            "id_sort_num",
             "title",
             "posted_at",
             "deadline_at",
@@ -557,6 +627,9 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
             [
                 "source",
                 "notice_id",
+                "raw_id_type",
+                "raw_id_value",
+                "id_sort_num",
                 "title",
                 "posted_at",
                 "deadline_at",
@@ -589,6 +662,8 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
     )
 
     existing = load_existing_keys(ws_index)
+    for src in ("LH", "i-SH", "GH"):
+        existing |= load_existing_keys(ws_source[src])
     new_records = [r for r in records if r.key() not in existing]
 
     if records:
@@ -601,6 +676,9 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
                     [
                         r.source,
                         r.notice_id,
+                        r.raw_id_type,
+                        r.raw_id_value,
+                        r.id_sort_num,
                         r.title,
                         r.posted_at,
                         r.deadline_at,
@@ -625,6 +703,9 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
                 [
                     r.source,
                     r.notice_id,
+                    r.raw_id_type,
+                    r.raw_id_value,
+                    r.id_sort_num,
                     r.title,
                     r.posted_at,
                     r.deadline_at,
@@ -703,7 +784,7 @@ def send_telegram(records: list[Notice], dry_run: bool, run_meta: dict[str, str]
         if not src_records:
             continue
         src_records.sort(
-            key=lambda x: (_parse_dot_date(x.posted_at) or date.min, x.notice_id),
+            key=lambda x: (_parse_dot_date(x.posted_at) or date.min, x.id_sort_num, x.notice_id),
             reverse=True,
         )
         src_name = SOURCE_DISPLAY[source]

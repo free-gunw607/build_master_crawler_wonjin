@@ -2,6 +2,12 @@
 
 This repository is for Bootstrap a new crawling project scaffold in the A4 worker layer.
 
+## V1 Freeze
+- Freeze date: `2026-05-16`
+- Runtime: hourly crawler for LH / i-SH / GH
+- Delta rule: raw-coupled key `(source, raw_id_value)` with idempotent append
+- Ops reference: `docs/V1_FREEZE.md`
+
 ## Owner Front Door
 - preferred owner goto command on bash / WSL: `./repo entry`
 - preferred owner goto command on PowerShell: `\.\repo.ps1 entry`

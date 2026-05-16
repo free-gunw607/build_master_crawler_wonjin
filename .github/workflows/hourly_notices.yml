@@ -33,7 +33,11 @@ jobs:
         env:
           GDRIVE_CREDS: ${{ secrets.GDRIVE_CREDS }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-          GOOGLE_SHEET_TAB: ${{ vars.GOOGLE_SHEET_TAB }}
+          GOOGLE_SHEET_INDEX_TAB: ${{ vars.GOOGLE_SHEET_INDEX_TAB }}
+          GOOGLE_SHEET_RUNLOG_TAB: ${{ vars.GOOGLE_SHEET_RUNLOG_TAB }}
+          GOOGLE_SHEET_TAB_LH: ${{ vars.GOOGLE_SHEET_TAB_LH }}
+          GOOGLE_SHEET_TAB_ISH: ${{ vars.GOOGLE_SHEET_TAB_ISH }}
+          GOOGLE_SHEET_TAB_GH: ${{ vars.GOOGLE_SHEET_TAB_GH }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |

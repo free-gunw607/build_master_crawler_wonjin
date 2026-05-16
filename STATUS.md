@@ -9,12 +9,12 @@
 Build a multi-source public notice crawler (LH, i-SH, GH) with hourly GitHub scheduler, Google Sheets vault persistence, and Telegram alert delivery
 
 ## Current phase
-implementation_in_progress
+v1_frozen
 
 ## Current focus
-- stabilize source parsers for LH/i-SH/GH
-- finalize idempotent Sheets append and Telegram delta notifier
-- validate hourly GitHub Actions workflow path and secrets contract
+- preserve v1 stability and monitor source selector drift
+- keep Sheets schema and GUIDE tab synchronized with code
+- operate hourly production workflow with idempotent delta alerts
 
 ## Recent completed work
 - project created via bootstrap script
@@ -23,10 +23,13 @@ implementation_in_progress
 - source structure research completed for LH/i-SH/GH list/detail/paging patterns
 - implemented initial crawler runtime and hourly workflow scaffold
 - generated first 1-year crawl workbook with 3 source sheets
+- applied raw-coupled normalization contract (`source + raw_id_value`)
+- frozen tab structure (`scheduler_run_logs`, `overall`, `LH`, `iSH`, `GH`, `GUIDE`)
+- cleaned legacy tabs and header-row contamination from production sheet
+- updated workflow env contract for per-tab variables
 
 ## Current blockers
 - none critical
-- credentials setup required before production run (`GOOGLE_SERVICE_ACCOUNT_JSON`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`)
 
 ## Capability and MCP status
 - required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API
@@ -34,24 +37,24 @@ implementation_in_progress
 - active MCP dependencies: none
 
 ## Progress snapshot
-- overall progress: 55%
-- current confidence: first implementation validated locally
-- current stability: workable baseline with source-specific parsing
+- overall progress: 100% (v1 scope)
+- current confidence: production workflow and sheet vault validated
+- current stability: frozen baseline
 
 ## Next actions
-1. run non-dry execution with real secrets to verify Sheets/Telegram delivery
-2. harden parser edge cases and add retry/backoff logging
-3. add regression checks for selector drift
+1. monitor hourly logs and source HTML drift
+2. add source-specific regression smoke checks
+3. onboard additional sources using same raw-coupled identity rule
 
 ## Phase marker
-- current: `PHASE-2-IMPLEMENTATION`
-- next: `PHASE-3-OPERATIONS-HARDENING`
+- current: `PHASE-3-V1-FROZEN`
+- next: `PHASE-4-EXTEND-SOURCES`
 - resume pointer: `src/build_master_crawler_wonjin/main.py`
 
 ## Deliverable proof
-- latest artifact path(s): `src/build_master_crawler_wonjin/main.py`, `.github/workflows/hourly_notices.yml`, `output/notices_first_run_1y.xlsx`, `output/notices_first_run_1y_prod.xlsx`, `docs/SOURCE_FREEZE.md`
+- latest artifact path(s): `src/build_master_crawler_wonjin/main.py`, `.github/workflows/hourly_notices.yml`, `docs/V1_FREEZE.md`, `docs/SOURCE_FREEZE.md`, `STATUS.md`
 - proof timestamp: 2026-05-16
-- note: production dry-run and non-dry-run both verified; Sheets append and Telegram send executed once
+- note: credentials are configured via GitHub secrets/vars only (no raw secret in repo)
 
 ## Relevant anchors
 - global policy: `~/.codex/AGENTS.md`
