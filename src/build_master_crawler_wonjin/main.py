@@ -5,7 +5,7 @@ import json
 import os
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
-from io import StringIO
+from zoneinfo import ZoneInfo
 from typing import Iterable
 
 import gspread
@@ -15,6 +15,16 @@ from bs4 import BeautifulSoup
 from google.oauth2.service_account import Credentials
 
 KST = "Asia/Seoul"
+SOURCE_DISPLAY = {
+    "LH": "LH청약플러스",
+    "i-SH": "SH인터넷청약시스템",
+    "GH": "GH 토지분양시스템",
+}
+SOURCE_BOARD_URL = {
+    "LH": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancList.do?mi=1062",
+    "i-SH": "https://www.i-sh.co.kr/app/lay2/program/S48T561C564/www/brd/m_255/list.do?multi_itm_seq=8",
+    "GH": "https://buy.gh.or.kr/land/svc/announce/land_announce_list.jsp?MenuId=SVC_ANN",
+}
 
 
 @dataclass(frozen=True)
@@ -461,18 +471,50 @@ def send_telegram(records: list[Notice], dry_run: bool) -> None:
     if not records:
         return
 
-    lines = [
-        f"[공고 크롤링] 신규 {len(records)}건",
-        "",
-    ]
-    for i, r in enumerate(records[:30], start=1):
-        lines.append(f"{i}. ({r.source}) {r.title}")
-        lines.append(f"- 공고일: {r.posted_at} | 링크: {r.detail_url}")
-    if len(records) > 30:
-        lines.append(f"... 외 {len(records)-30}건")
+    kst_now = datetime.now(ZoneInfo(KST))
+    run_seq = kst_now.hour + 1
+    run_time = kst_now.strftime("%m-%d %H:00")
 
-    payload = {"chat_id": chat_id, "text": "\n".join(lines)}
-    requests.post(f"https://api.telegram.org/bot{token}/sendMessage", data=payload, timeout=30)
+    header = (
+        "<b>[크롤링 실행 알림]</b>\n"
+        f"- 실행 회차: {run_seq}회\n"
+        f"- 실행 시각: {run_time}\n"
+        f"- 신규 건수: {len(records)}건"
+    )
+    requests.post(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data={"chat_id": chat_id, "text": header, "parse_mode": "HTML", "disable_web_page_preview": True},
+        timeout=30,
+    )
+
+    lines: list[str] = ["<b>[크롤링 결과 요약]</b>", ""]
+    for source in ("LH", "i-SH", "GH"):
+        src_records = [r for r in records if r.source == source]
+        if not src_records:
+            continue
+        src_records.sort(
+            key=lambda x: (_parse_dot_date(x.posted_at) or date.min, x.notice_id),
+            reverse=True,
+        )
+        src_name = SOURCE_DISPLAY[source]
+        board_url = SOURCE_BOARD_URL[source]
+        lines.append(f"<b>[{src_name}] 신규 {len(src_records)}건 (최신 5건)</b>")
+        lines.append(f"- 게시판 바로가기: <a href=\"{board_url}\">[목록]</a>")
+        for r in src_records[:5]:
+            d = _parse_dot_date(r.posted_at)
+            d_str = d.strftime("%m-%d") if d else "-"
+            lines.append(
+                f"- {d_str} | {r.title} | {src_name} | "
+                f"<a href=\"{r.detail_url}\">[열기]</a>"
+            )
+        lines.append("")
+
+    detail = "\n".join(lines).strip()
+    requests.post(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data={"chat_id": chat_id, "text": detail, "parse_mode": "HTML", "disable_web_page_preview": True},
+        timeout=30,
+    )
 
 
 def run(from_date: date, dry_run: bool, output_xlsx: str) -> dict:
