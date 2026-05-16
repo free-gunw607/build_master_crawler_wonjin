@@ -570,10 +570,18 @@ def load_existing_keys(ws: gspread.Worksheet) -> set[tuple[str, str]]:
     return out
 
 
-def _ensure_worksheet(sh: gspread.Spreadsheet, title: str, headers: list[str]) -> gspread.Worksheet:
+def _ensure_worksheet(
+    sh: gspread.Spreadsheet,
+    title: str,
+    headers: list[str],
+    *,
+    create_if_missing: bool = False,
+) -> gspread.Worksheet:
     try:
         ws = sh.worksheet(title)
     except gspread.WorksheetNotFound:
+        if not create_if_missing:
+            raise RuntimeError(f"Required Google Sheet tab is missing: {title}")
         ws = sh.add_worksheet(title=title, rows=2000, cols=max(20, len(headers) + 2))
         ws.append_row(headers)
     return ws
