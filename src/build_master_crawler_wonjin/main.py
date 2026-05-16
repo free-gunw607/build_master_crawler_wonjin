@@ -519,9 +519,13 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
     if not sheet_id:
         return records, meta
 
-    index_tab = os.environ.get("GOOGLE_SHEET_INDEX_TAB", "notices_index").strip()
-    archive_tab = os.environ.get("GOOGLE_SHEET_ARCHIVE_TAB", "notices_archive").strip()
-    runlog_tab = os.environ.get("GOOGLE_SHEET_RUNLOG_TAB", "notices_runlog").strip()
+    index_tab = os.environ.get("GOOGLE_SHEET_INDEX_TAB", "overall").strip()
+    runlog_tab = os.environ.get("GOOGLE_SHEET_RUNLOG_TAB", "scheduler_run_logs").strip()
+    source_tabs = {
+        "LH": os.environ.get("GOOGLE_SHEET_TAB_LH", "LH").strip(),
+        "i-SH": os.environ.get("GOOGLE_SHEET_TAB_ISH", "iSH").strip(),
+        "GH": os.environ.get("GOOGLE_SHEET_TAB_GH", "GH").strip(),
+    }
 
     gc = gsheet_client_from_env()
     sh = gc.open_by_key(sheet_id)
@@ -546,26 +550,29 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
             "first_seen_utc",
         ],
     )
-    ws_archive = _ensure_worksheet(
-        sh,
-        archive_tab,
-        [
-            "source",
-            "notice_id",
-            "title",
-            "posted_at",
-            "deadline_at",
-            "status",
-            "detail_url",
-            "attachments",
-            "area",
-            "category",
-            "views",
-            "run_id",
-            "run_at_kst",
-            "run_at_utc",
-        ],
-    )
+    ws_source = {
+        src: _ensure_worksheet(
+            sh,
+            tab,
+            [
+                "source",
+                "notice_id",
+                "title",
+                "posted_at",
+                "deadline_at",
+                "status",
+                "detail_url",
+                "attachments",
+                "area",
+                "category",
+                "views",
+                "run_id",
+                "run_at_kst",
+                "run_at_utc",
+            ],
+        )
+        for src, tab in source_tabs.items()
+    }
     ws_runlog = _ensure_worksheet(
         sh,
         runlog_tab,
@@ -585,28 +592,32 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
     new_records = [r for r in records if r.key() not in existing]
 
     if records:
-        ws_archive.append_rows(
-            [
+        for src in ("LH", "i-SH", "GH"):
+            src_rows = [r for r in records if r.source == src]
+            if not src_rows:
+                continue
+            ws_source[src].append_rows(
                 [
-                    r.source,
-                    r.notice_id,
-                    r.title,
-                    r.posted_at,
-                    r.deadline_at,
-                    r.status,
-                    r.detail_url,
-                    r.attachments,
-                    r.area,
-                    r.category,
-                    r.views,
-                    meta["run_id"],
-                    meta["run_at_kst"],
-                    meta["run_at_utc"],
-                ]
-                for r in records
-            ],
-            value_input_option="RAW",
-        )
+                    [
+                        r.source,
+                        r.notice_id,
+                        r.title,
+                        r.posted_at,
+                        r.deadline_at,
+                        r.status,
+                        r.detail_url,
+                        r.attachments,
+                        r.area,
+                        r.category,
+                        r.views,
+                        meta["run_id"],
+                        meta["run_at_kst"],
+                        meta["run_at_utc"],
+                    ]
+                    for r in src_rows
+                ],
+                value_input_option="RAW",
+            )
 
     if new_records:
         ws_index.append_rows(
