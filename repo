@@ -211,7 +211,7 @@ run_project_cli() {
   fi
 
   export PYTHONPATH="$SCRIPT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
-  exec "$python_bin" -m build_master_crawler.cli "$@"
+  exec "$python_bin" -m build_master_crawler_wonjin.cli "$@"
 }
 
 COMMAND="${1:-entry}"

@@ -1,0 +1,59 @@
+name: Hourly Public Notice Crawler
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run without writing Google Sheets / Telegram"
+        required: true
+        default: false
+        type: boolean
+      from_date:
+        description: "Optional backfill start date (YYYY-MM-DD)"
+        required: false
+        type: string
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run crawler
+        env:
+          GDRIVE_CREDS: ${{ secrets.GDRIVE_CREDS }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEET_TAB: ${{ vars.GOOGLE_SHEET_TAB }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          export PYTHONPATH="$PWD/src"
+          DRY_FLAG=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_FLAG="--dry-run"
+          fi
+
+          FROM_ARG=""
+          if [ -n "${{ github.event.inputs.from_date }}" ]; then
+            FROM_ARG="--from-date ${{ github.event.inputs.from_date }}"
+          fi
+
+          python -m build_master_crawler_wonjin.main $DRY_FLAG $FROM_ARG
+
+      - name: Upload workbook artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notices-workbook
+          path: output/*.xlsx
+          if-no-files-found: ignore

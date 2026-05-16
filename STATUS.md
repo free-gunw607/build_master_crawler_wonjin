@@ -1,54 +1,57 @@
 # STATUS
 
 ## Repository
-- repo: `build_master_crawler`
-- workspace path: `~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler`
-- standardized project name: `build_master_crawler`
+- repo: `build_master_crawler_wonjin`
+- workspace path: `~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin`
+- standardized project name: `build_master_crawler_wonjin`
 
 ## Current objective
-Bootstrap a new crawling project scaffold in the A4 worker layer
+Build a multi-source public notice crawler (LH, i-SH, GH) with hourly GitHub scheduler, Google Sheets vault persistence, and Telegram alert delivery
 
 ## Current phase
-bootstrap
+implementation_in_progress
 
 ## Current focus
-- initialize repository structure
-- clarify first approved scope
-- align repo with the universal autonomy policy
+- stabilize source parsers for LH/i-SH/GH
+- finalize idempotent Sheets append and Telegram delta notifier
+- validate hourly GitHub Actions workflow path and secrets contract
 
 ## Recent completed work
 - project created via bootstrap script
 - launcher, .agent runtime, and durable handoff scaffolding generated
 - repo policy and status board created
+- source structure research completed for LH/i-SH/GH list/detail/paging patterns
+- implemented initial crawler runtime and hourly workflow scaffold
+- generated first 1-year crawl workbook with 3 source sheets
 
 ## Current blockers
-- none yet
-- define after first implementation review
+- none critical
+- credentials setup required before production run (`GOOGLE_SERVICE_ACCOUNT_JSON`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`)
 
 ## Capability and MCP status
-- required external capabilities: none confirmed yet
+- required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API
 - approved but not active: none
 - active MCP dependencies: none
 
 ## Progress snapshot
-- overall progress: 5%
-- current confidence: early but structured
-- current stability: initial scaffold only
+- overall progress: 55%
+- current confidence: first implementation validated locally
+- current stability: workable baseline with source-specific parsing
 
 ## Next actions
-1. register the project in the vault
-2. define the first approved implementation scope
-3. start the first implementation cycle while keeping durable handoff files current
+1. run non-dry execution with real secrets to verify Sheets/Telegram delivery
+2. harden parser edge cases and add retry/backoff logging
+3. add regression checks for selector drift
 
 ## Phase marker
-- current: keep explicit phase id (example: `PHASE-0`, `PHASE-1`)
-- next: keep one immediate next phase id
-- resume pointer: one file/section pointer for zero-warmup resume
+- current: `PHASE-2-IMPLEMENTATION`
+- next: `PHASE-3-OPERATIONS-HARDENING`
+- resume pointer: `src/build_master_crawler_wonjin/main.py`
 
 ## Deliverable proof
-- latest artifact path(s): record concrete file paths for the latest deliverable
-- proof timestamp: record when the artifact was written or verified
-- note: do not mark completed from chat-only promises without file proof
+- latest artifact path(s): `src/build_master_crawler_wonjin/main.py`, `.github/workflows/hourly_notices.yml`, `output/notices_first_run_1y.xlsx`, `output/notices_first_run_1y_prod.xlsx`, `docs/SOURCE_FREEZE.md`
+- proof timestamp: 2026-05-16
+- note: production dry-run and non-dry-run both verified; Sheets append and Telegram send executed once
 
 ## Relevant anchors
 - global policy: `~/.codex/AGENTS.md`

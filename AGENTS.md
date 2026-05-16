@@ -6,9 +6,9 @@
 > Structure reference: `~/agent-coding/agent-system/A2-workspace-memory/Structure.md`
 
 ## Repository
-- current repo: `build_master_crawler`
-- workspace path: `~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler`
-- standardized project name: `build_master_crawler`
+- current repo: `build_master_crawler_wonjin`
+- workspace path: `~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin`
+- standardized project name: `build_master_crawler_wonjin`
 
 ## Objective
 Bootstrap a new crawling project scaffold in the A4 worker layer

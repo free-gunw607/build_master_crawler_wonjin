@@ -2,7 +2,7 @@
 
 ## Quick Start
 ```bash
-cd ~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler
+cd ~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin
 ./repo entry
 ./repo doctor
 ./repo agent-status
@@ -81,7 +81,7 @@ Upload a repo snapshot to Google Drive via `gws`, update registry metadata, and 
 - `./repo agent-approvals`
 - `./repo preflight`
 - `./repo claim-node --node-id 1`
-- `./repo claim-write-session --path src/build_master_crawler`
+- `./repo claim-write-session --path src/build_master_crawler_wonjin`
 - `./repo create-manifest --target-repo some_other_repo --path STATUS.md --reason "approved shared change"`
 - `./repo snapshot-repo --reason "manual checkpoint"`
 - `./repo publish-repo-snapshot --drive-folder-id <google_drive_folder_id>`
@@ -91,3 +91,18 @@ Upload a repo snapshot to Google Drive via `gws`, update registry metadata, and 
 - prefer use-case examples over raw subcommand lists
 - use `LAST_ANSWER.md` and `.agent/` runtime files as the default progress trail
 - make any company-tracking or target-tracking mode explicit if the repo supports it
+
+## Public Notice Crawler
+
+```bash
+cd ~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+PYTHONPATH=src python -m build_master_crawler_wonjin.main --days 365 --dry-run
+```
+
+```bash
+# production mode (Sheets + Telegram)
+PYTHONPATH=src python -m build_master_crawler_wonjin.main --days 365
+```

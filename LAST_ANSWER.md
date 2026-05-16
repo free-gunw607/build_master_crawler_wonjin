@@ -3,7 +3,10 @@
 ## Current state
 - repo scaffold created
 - durable handoff convention is active
-- repo-local objective should be summarized here as work advances
+- source research for LH/i-SH/GH completed
+- hourly-ops design documented for GitHub scheduler + Google Sheets vault + Telegram alerts
+- first crawler implementation completed (`main.py`)
+- first 1-year crawl workbook generated with source table-oriented sheets
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work
@@ -11,14 +14,20 @@
 - reserve approval requests for important trust, scope, authentication, privacy-sensitive, remote-side-effect, or destructive boundaries
 
 ## Phase status
-- current phase: record exact phase id
-- next phase: record immediate next phase id
-- resume pointer: record first file/command to restart without warm-up
+- current phase: `PHASE-2-IMPLEMENTATION`
+- next phase: `PHASE-3-OPERATIONS-HARDENING`
+- resume pointer: `src/build_master_crawler_wonjin/main.py`
 
 ## Deliverable proof
-- artifact path(s): record concrete path(s) produced in this cycle
-- proof timestamp: record verification time
-- completion rule: if no artifact path exists, treat as not completed
+- artifact path(s):
+  - `src/build_master_crawler_wonjin/main.py`
+  - `.github/workflows/hourly_notices.yml`
+  - `output/notices_first_run_1y.xlsx`
+  - `output/notices_first_run_1y_prod.xlsx`
+  - `docs/SOURCE_FREEZE.md`
+  - `STATUS.md`
+- proof timestamp: `2026-05-16`
+- completion rule: production completion requires non-dry run with valid Sheets/Telegram secrets
 
 ## Durable handoff path
 - repo root `LAST_ANSWER.md` is the current summary

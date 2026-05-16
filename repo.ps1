@@ -230,7 +230,7 @@ function Invoke-ProjectCli {
         $env:PYTHONPATH = "$ScriptDir/src"
     }
 
-    & $DefaultPythonBin -m build_master_crawler.cli @Args
+    & $DefaultPythonBin -m build_master_crawler_wonjin.cli @Args
     exit $LASTEXITCODE
 }
 

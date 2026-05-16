@@ -40,5 +40,5 @@ This repository is for Bootstrap a new crawling project scaffold in the A4 worke
 - target OS baseline: `~/agent-coding/agent-system/A1-system-governance/docs/TARGET_OS/00_ENTRY.md`
 
 ## Workspace placement
-- worker repo root: `~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler`
+- worker repo root: `~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin`
 - the repo may keep its own local operating rules, but new repos should anchor to the target-OS governance package
