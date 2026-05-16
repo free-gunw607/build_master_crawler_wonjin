@@ -1,0 +1,64 @@
+name: Schedule Watchdog
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  detect-missing-schedule:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check latest schedule run age
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          repo="${{ github.repository }}"
+          workflow_file="hourly_notices.yml"
+          now_epoch="$(date -u +%s)"
+
+          last_created="$(gh api "repos/${repo}/actions/workflows/${workflow_file}/runs?event=schedule&per_page=1" --jq '.workflow_runs[0].created_at // empty')"
+
+          if [ -z "${last_created}" ]; then
+            echo "status=missing" >> "$GITHUB_OUTPUT"
+            echo "message=No schedule run has ever been created for ${workflow_file}." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          last_epoch="$(date -u -d "${last_created}" +%s)"
+          age_minutes="$(( (now_epoch - last_epoch) / 60 ))"
+
+          if [ "${age_minutes}" -gt 90 ]; then
+            echo "status=stale" >> "$GITHUB_OUTPUT"
+            echo "message=Last schedule run is ${age_minutes} minutes old (created_at=${last_created})." >> "$GITHUB_OUTPUT"
+          else
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+            echo "message=Last schedule run age is ${age_minutes} minutes (created_at=${last_created})." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Notify Telegram on missing/stale schedule
+        if: steps.check.outputs.status != 'ok'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MESSAGE: ${{ steps.check.outputs.message }}
+        run: |
+          set -euo pipefail
+          text="[ALERT] ${MESSAGE} repo=${{ github.repository }} workflow=hourly_notices.yml"
+          curl -sS -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${text}" >/dev/null
+
+      - name: Fail when missing/stale
+        if: steps.check.outputs.status != 'ok'
+        run: |
+          echo "${{ steps.check.outputs.message }}"
+          exit 1
+
