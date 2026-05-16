@@ -1,0 +1,262 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+ENTRY_DOC="$SCRIPT_DIR/ENTRY.md"
+COMMANDS_DOC="$SCRIPT_DIR/COMMANDS.md"
+STATUS_DOC="$SCRIPT_DIR/STATUS.md"
+LAST_ANSWER_DOC="$SCRIPT_DIR/LAST_ANSWER.md"
+AGENT_DIR="$SCRIPT_DIR/.agent"
+AGENT_README="$AGENT_DIR/README.md"
+APPROVAL_POLICY="$AGENT_DIR/approvals/POLICY.md"
+RUNTIME_HELPER="$SCRIPT_DIR/../../../agent-system/A3-runtime-standards/ops-scripts/repo_runtime.py"
+
+print_modes() {
+  cat <<'MODEEOF'
+Owner front door:
+- ./repo entry
+- ./repo doctor
+- ./repo agent-status
+- ./repo last-answer
+
+Standard discoverability commands:
+- entry
+- modes
+- examples
+- doctor
+- last-answer
+
+Standard runtime commands:
+- agent-status
+- agent-log
+- agent-approvals
+- agent-bundle
+- agent-resume
+- agent-queue
+- node-status
+- preflight
+- compliance
+- claim-node --node-id <id>
+- release-node
+- claim-auth-family <family_id>
+- release-auth-family
+- claim-write-session --path <path>
+- release-write-session
+- create-manifest --target-repo <repo> --path <path>
+- snapshot-repo --reason "<reason>"
+- publish-repo-snapshot --drive-folder-id <id>
+
+Any other command is passed through to the project CLI when available.
+MODEEOF
+}
+
+run_doctor() {
+  local missing=0
+  local path
+  local required_files=(
+    "README.md"
+    "AGENTS.md"
+    "STATUS.md"
+    "ENTRY.md"
+    "CODEMAP.md"
+    "COMMANDS.md"
+    "LAST_ANSWER.md"
+    "repo"
+    "repo.ps1"
+    ".agent/README.md"
+    ".agent/state/README.md"
+    ".agent/state/project_state.json"
+    ".agent/logs/README.md"
+    ".agent/approvals/POLICY.md"
+    ".agent/approvals/pending_approvals.json"
+    ".agent/runs/README.md"
+    ".agent/bundles/README.md"
+    ".agent/queue/README.md"
+    ".agent/queue/tasks.json"
+    ".agent/answers/README.md"
+  )
+  local required_dirs=(
+    ".agent"
+    ".agent/state"
+    ".agent/logs"
+    ".agent/approvals"
+    ".agent/runs"
+    ".agent/bundles"
+    ".agent/queue"
+    ".agent/answers"
+  )
+
+  echo "Repo doctor"
+  echo "Directory: $SCRIPT_DIR"
+
+  for path in "${required_files[@]}"; do
+    if [[ -f "$SCRIPT_DIR/$path" || -x "$SCRIPT_DIR/$path" ]]; then
+      echo "OK file: $path"
+    else
+      echo "MISSING file: $path"
+      missing=1
+    fi
+  done
+
+  for path in "${required_dirs[@]}"; do
+    if [[ -d "$SCRIPT_DIR/$path" ]]; then
+      echo "OK dir:  $path"
+    else
+      echo "MISSING dir: $path"
+      missing=1
+    fi
+  done
+
+  if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+    echo "OK runtime: python interpreter available"
+  else
+    echo "WARN runtime: no python interpreter found"
+  fi
+
+  return "$missing"
+}
+
+count_items() {
+  local dir="$1"
+  find "$dir" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' '
+}
+
+show_agent_status() {
+  echo "Agent runtime summary"
+  echo "Repo: $SCRIPT_DIR"
+  echo "Status board: $STATUS_DOC"
+  echo "Latest handoff: $LAST_ANSWER_DOC"
+  echo "Runtime guide: $AGENT_README"
+  echo "Approval policy: $APPROVAL_POLICY"
+  echo "state items: $(count_items "$AGENT_DIR/state")"
+  echo "log items: $(count_items "$AGENT_DIR/logs")"
+  echo "approval items: $(count_items "$AGENT_DIR/approvals")"
+  echo "run items: $(count_items "$AGENT_DIR/runs")"
+  echo "bundle items: $(count_items "$AGENT_DIR/bundles")"
+  echo "queue items: $(count_items "$AGENT_DIR/queue")"
+  echo "answer items: $(count_items "$AGENT_DIR/answers")"
+}
+
+show_latest_from_dir() {
+  local dir="$1"
+  local label="$2"
+  local latest
+
+  if [[ $# -ge 3 && -n "${3:-}" ]]; then
+    latest="$dir/$3"
+    if [[ -f "$latest" ]]; then
+      sed -n '1,200p' "$latest"
+      return 0
+    fi
+    echo "No such $label file: $latest" >&2
+    return 1
+  fi
+
+  latest="$(find "$dir" -mindepth 1 -maxdepth 1 -type f ! -name 'README.md' ! -name 'POLICY.md' | sort | tail -n 1)"
+  if [[ -n "$latest" ]]; then
+    echo "Latest $label file: $latest"
+    sed -n '1,200p' "$latest"
+    return 0
+  fi
+
+  echo "No $label files found in $dir"
+  return 0
+}
+
+show_agent_approvals() {
+  sed -n '1,220p' "$APPROVAL_POLICY"
+  echo
+  echo "Approval artifacts:"
+  find "$AGENT_DIR/approvals" -mindepth 1 -maxdepth 1 ! -name 'POLICY.md' | sort
+}
+
+show_agent_bundle() {
+  if [[ $# -gt 0 ]]; then
+    show_latest_from_dir "$AGENT_DIR/bundles" "bundle" "$1"
+    return
+  fi
+
+  echo "Bundle directory: $AGENT_DIR/bundles"
+  find "$AGENT_DIR/bundles" -mindepth 1 -maxdepth 1 | sort
+}
+
+show_agent_resume() {
+  echo "Resume guide: $AGENT_DIR/runs/README.md"
+  sed -n '1,220p' "$AGENT_DIR/runs/README.md"
+  echo
+  echo "Latest run artifact:"
+  show_latest_from_dir "$AGENT_DIR/runs" "run" || true
+}
+
+show_agent_queue() {
+  echo "Queue directory: $AGENT_DIR/queue"
+  find "$AGENT_DIR/queue" -mindepth 1 -maxdepth 1 | sort
+}
+
+if command -v python3 >/dev/null 2>&1; then
+  DEFAULT_PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+  DEFAULT_PYTHON_BIN="python"
+else
+  DEFAULT_PYTHON_BIN=""
+fi
+
+run_project_cli() {
+  local python_bin="${DEFAULT_PYTHON_BIN:-}"
+  if [[ -z "$python_bin" ]]; then
+    echo "No Python interpreter found. Expected python3 or python." >&2
+    exit 127
+  fi
+
+  export PYTHONPATH="$SCRIPT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+  exec "$python_bin" -m build_master_crawler.cli "$@"
+}
+
+COMMAND="${1:-entry}"
+if [[ $# -gt 0 ]]; then
+  shift
+fi
+
+case "$COMMAND" in
+  entry)
+    exec sed -n '1,220p' "$ENTRY_DOC"
+    ;;
+  modes)
+    print_modes
+    ;;
+  examples)
+    exec sed -n '1,240p' "$COMMANDS_DOC"
+    ;;
+  doctor)
+    run_doctor
+    ;;
+  last-answer)
+    exec sed -n '1,240p' "$LAST_ANSWER_DOC"
+    ;;
+  agent-status)
+    show_agent_status
+    ;;
+  agent-log)
+    show_latest_from_dir "$AGENT_DIR/logs" "log" "${1:-}"
+    ;;
+  agent-approvals)
+    show_agent_approvals
+    ;;
+  agent-bundle)
+    show_agent_bundle "$@"
+    ;;
+  agent-resume)
+    show_agent_resume
+    ;;
+  agent-queue)
+    show_agent_queue
+    ;;
+  node-status|preflight|compliance|claim-node|release-node|claim-auth-family|release-auth-family|claim-write-session|release-write-session|create-manifest|snapshot-repo|publish-repo-snapshot|record-git-event)
+    exec "$DEFAULT_PYTHON_BIN" "$RUNTIME_HELPER" --repo-root "$SCRIPT_DIR" "$COMMAND" "$@"
+    ;;
+  *)
+    run_project_cli "$COMMAND" "$@"
+    ;;
+esac

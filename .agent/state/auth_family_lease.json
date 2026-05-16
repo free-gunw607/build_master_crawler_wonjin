@@ -1,0 +1,13 @@
+{
+  "family_id": null,
+  "repo": "build_master_crawler",
+  "lease_holder_node_id": null,
+  "lease_holder_node_name": "unassigned",
+  "lease_holder_node_kind": "unassigned",
+  "state": "unclaimed",
+  "acquired_at": null,
+  "expires_at": null,
+  "heartbeat_at": null,
+  "cooldown_until": null,
+  "notes": ""
+}

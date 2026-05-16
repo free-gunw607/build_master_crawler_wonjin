@@ -1,0 +1,26 @@
+{
+  "auto_allowed": [
+    "repo-local file edits",
+    "docs, STATUS.md, and LAST_ANSWER.md updates",
+    ".agent state, log, answer, run, queue, and bundle updates",
+    "local non-destructive tests",
+    "local artifact generation",
+    "continued work inside the already approved scope",
+    "local analysis, refactoring, normalization, and documentation work"
+  ],
+  "approval_gated": [
+    "major scope changes",
+    "branch or strategy deviations from the agreed objective",
+    "initial login or re-login",
+    "access to a new authenticated family outside current approved scope",
+    "git push",
+    "external uploads",
+    "destructive actions",
+    "trust-sensitive or privacy-sensitive actions",
+    "individual-account or personal-information-sensitive actions",
+    "privileged operations or commands that require escalation outside the normal sandbox"
+  ],
+  "pending_requests": [
+    "No active approval request yet. Interrupt only when a real approval boundary or hard blocker appears."
+  ]
+}

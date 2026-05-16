@@ -1,0 +1,14 @@
+{
+  "repo": "build_master_crawler",
+  "session_id": null,
+  "actor": null,
+  "node_id": null,
+  "node_name": "unassigned",
+  "node_kind": "unassigned",
+  "scope": "repo-local",
+  "owned_paths": [],
+  "state": "idle",
+  "started_at": null,
+  "last_write_at": null,
+  "release_reason": null
+}

@@ -1,0 +1,14 @@
+{
+  "repo": "build_master_crawler",
+  "lease_holder_node_id": null,
+  "lease_holder_node_name": "unassigned",
+  "lease_holder_node_kind": "unassigned",
+  "acquired_at": null,
+  "expires_at": null,
+  "heartbeat_at": null,
+  "previous_holder_node_id": null,
+  "previous_holder_node_name": null,
+  "previous_holder_node_kind": null,
+  "takeover_policy": "owner-approved-or-expired-lease",
+  "mode": "unclaimed"
+}
