@@ -397,6 +397,76 @@ def _typed_df(rows: list[dict[str, str]], date_cols: list[str], int_cols: list[s
     return df
 
 
+def load_notices_from_xlsx(path: str) -> list[Notice]:
+    x = pd.ExcelFile(path)
+    out: list[Notice] = []
+
+    if "LH" in x.sheet_names:
+        df = pd.read_excel(path, sheet_name="LH")
+        for _, row in df.iterrows():
+            out.append(
+                Notice(
+                    source="LH",
+                    notice_id=str(row.get("panId", "")).strip(),
+                    title=str(row.get("공고명", "")).strip(),
+                    posted_at="" if pd.isna(row.get("공고일")) else pd.to_datetime(row.get("공고일")).strftime("%Y-%m-%d"),
+                    deadline_at="" if pd.isna(row.get("마감일")) else pd.to_datetime(row.get("마감일")).strftime("%Y-%m-%d"),
+                    status=str(row.get("상태", "")).strip(),
+                    detail_url=str(row.get("detail_url", "")).strip(),
+                    attachments=str(row.get("첨부파일", "")).strip(),
+                    area=str(row.get("지역", "")).strip(),
+                    category=str(row.get("구분", "토지")).strip() or "토지",
+                    views=str(row.get("조회수", "")).strip(),
+                )
+            )
+    if "iSH" in x.sheet_names:
+        df = pd.read_excel(path, sheet_name="iSH")
+        for _, row in df.iterrows():
+            out.append(
+                Notice(
+                    source="i-SH",
+                    notice_id=str(row.get("seq", "")).strip(),
+                    title=str(row.get("제목", "")).strip(),
+                    posted_at="" if pd.isna(row.get("등록일")) else pd.to_datetime(row.get("등록일")).strftime("%Y-%m-%d"),
+                    deadline_at="",
+                    status="",
+                    detail_url=str(row.get("detail_url", "")).strip(),
+                    attachments="",
+                    area="",
+                    category="토지",
+                    views=str(row.get("조회수", "")).strip(),
+                )
+            )
+    if "GH" in x.sheet_names:
+        df = pd.read_excel(path, sheet_name="GH")
+        for _, row in df.iterrows():
+            out.append(
+                Notice(
+                    source="GH",
+                    notice_id=str(row.get("annSeq", "")).strip(),
+                    title=str(row.get("공고명", "")).strip(),
+                    posted_at="" if pd.isna(row.get("공고일")) else pd.to_datetime(row.get("공고일")).strftime("%Y-%m-%d"),
+                    deadline_at="" if pd.isna(row.get("마감일")) else pd.to_datetime(row.get("마감일")).strftime("%Y-%m-%d"),
+                    status=str(row.get("상태", "")).strip(),
+                    detail_url=str(row.get("detail_url", "")).strip(),
+                    attachments="",
+                    area="",
+                    category="토지",
+                    views=str(row.get("조회수", "")).strip(),
+                )
+            )
+    cleaned: list[Notice] = []
+    seen: set[tuple[str, str]] = set()
+    for r in out:
+        if not r.notice_id:
+            continue
+        if r.key() in seen:
+            continue
+        seen.add(r.key())
+        cleaned.append(r)
+    return cleaned
+
+
 def gsheet_client_from_env() -> gspread.Client:
     creds_raw = os.environ.get("GDRIVE_CREDS") or os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
     if not creds_raw:
@@ -423,62 +493,181 @@ def load_existing_keys(ws: gspread.Worksheet) -> set[tuple[str, str]]:
     return out
 
 
-def append_new_rows_to_sheet(records: list[Notice], dry_run: bool) -> list[Notice]:
+def _ensure_worksheet(sh: gspread.Spreadsheet, title: str, headers: list[str]) -> gspread.Worksheet:
+    try:
+        ws = sh.worksheet(title)
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title=title, rows=2000, cols=max(20, len(headers) + 2))
+        ws.append_row(headers)
+    return ws
+
+
+def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[Notice], dict[str, str]]:
+    run_utc = datetime.now(UTC).replace(microsecond=0)
+    run_kst = run_utc.astimezone(ZoneInfo(KST))
+    run_id = run_kst.strftime("%Y%m%d%H%M")
+    meta = {
+        "run_id": run_id,
+        "run_at_kst": run_kst.strftime("%Y-%m-%d %H:%M"),
+        "run_at_utc": run_utc.isoformat().replace("+00:00", "Z"),
+    }
+
     if dry_run:
-        return records
+        return records, meta
 
     sheet_id = os.environ.get("GOOGLE_SHEET_ID", "").strip()
-    tab = os.environ.get("GOOGLE_SHEET_TAB", "notices_raw").strip()
     if not sheet_id:
-        return records
+        return records, meta
+
+    index_tab = os.environ.get("GOOGLE_SHEET_INDEX_TAB", "notices_index").strip()
+    archive_tab = os.environ.get("GOOGLE_SHEET_ARCHIVE_TAB", "notices_archive").strip()
+    runlog_tab = os.environ.get("GOOGLE_SHEET_RUNLOG_TAB", "notices_runlog").strip()
 
     gc = gsheet_client_from_env()
     sh = gc.open_by_key(sheet_id)
-    try:
-        ws = sh.worksheet(tab)
-    except gspread.WorksheetNotFound:
-        ws = sh.add_worksheet(title=tab, rows=1000, cols=20)
-        ws.append_row(
+
+    ws_index = _ensure_worksheet(
+        sh,
+        index_tab,
+        [
+            "source",
+            "notice_id",
+            "title",
+            "posted_at",
+            "deadline_at",
+            "status",
+            "detail_url",
+            "attachments",
+            "area",
+            "category",
+            "views",
+            "first_seen_run_id",
+            "first_seen_kst",
+            "first_seen_utc",
+        ],
+    )
+    ws_archive = _ensure_worksheet(
+        sh,
+        archive_tab,
+        [
+            "source",
+            "notice_id",
+            "title",
+            "posted_at",
+            "deadline_at",
+            "status",
+            "detail_url",
+            "attachments",
+            "area",
+            "category",
+            "views",
+            "run_id",
+            "run_at_kst",
+            "run_at_utc",
+        ],
+    )
+    ws_runlog = _ensure_worksheet(
+        sh,
+        runlog_tab,
+        [
+            "run_id",
+            "run_at_kst",
+            "run_at_utc",
+            "fetched_total",
+            "new_total",
+            "fetched_lh",
+            "fetched_ish",
+            "fetched_gh",
+        ],
+    )
+
+    existing = load_existing_keys(ws_index)
+    new_records = [r for r in records if r.key() not in existing]
+
+    if records:
+        ws_archive.append_rows(
             [
-                "source",
-                "notice_id",
-                "title",
-                "posted_at",
-                "deadline_at",
-                "status",
-                "detail_url",
-                "attachments",
-                "area",
-                "category",
-                "views",
-                "collected_at_utc",
-            ]
+                [
+                    r.source,
+                    r.notice_id,
+                    r.title,
+                    r.posted_at,
+                    r.deadline_at,
+                    r.status,
+                    r.detail_url,
+                    r.attachments,
+                    r.area,
+                    r.category,
+                    r.views,
+                    meta["run_id"],
+                    meta["run_at_kst"],
+                    meta["run_at_utc"],
+                ]
+                for r in records
+            ],
+            value_input_option="RAW",
         )
 
-    existing = load_existing_keys(ws)
-    now_utc = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    new_records = [r for r in records if r.key() not in existing]
     if new_records:
-        ws.append_rows([r.to_row(now_utc) for r in new_records], value_input_option="RAW")
-    return new_records
+        ws_index.append_rows(
+            [
+                [
+                    r.source,
+                    r.notice_id,
+                    r.title,
+                    r.posted_at,
+                    r.deadline_at,
+                    r.status,
+                    r.detail_url,
+                    r.attachments,
+                    r.area,
+                    r.category,
+                    r.views,
+                    meta["run_id"],
+                    meta["run_at_kst"],
+                    meta["run_at_utc"],
+                ]
+                for r in new_records
+            ],
+            value_input_option="RAW",
+        )
+
+    counts = {"LH": 0, "i-SH": 0, "GH": 0}
+    for r in records:
+        counts[r.source] = counts.get(r.source, 0) + 1
+
+    ws_runlog.append_row(
+        [
+            meta["run_id"],
+            meta["run_at_kst"],
+            meta["run_at_utc"],
+            len(records),
+            len(new_records),
+            counts.get("LH", 0),
+            counts.get("i-SH", 0),
+            counts.get("GH", 0),
+        ],
+        value_input_option="RAW",
+    )
+    return new_records, meta
 
 
-def send_telegram(records: list[Notice], dry_run: bool) -> None:
+def send_telegram(records: list[Notice], dry_run: bool, run_meta: dict[str, str]) -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if dry_run or not token or not chat_id:
         return
-    if not records:
-        return
-
     kst_now = datetime.now(ZoneInfo(KST))
     run_seq = kst_now.hour + 1
-    run_time = kst_now.strftime("%m-%d %H:00")
+    run_time = run_meta.get("run_at_kst", kst_now.strftime("%Y-%m-%d %H:%M"))
+    hour = kst_now.hour
+    time_map = " ".join([f"[{h:02d}]" if h == hour else f"{h:02d}" for h in range(24)])
 
     header = (
         "<b>[크롤링 실행 알림]</b>\n"
         f"- 실행 회차: {run_seq}회\n"
         f"- 실행 시각: {run_time}\n"
+        f"- 시간맵(현재): {time_map}\n"
         f"- 신규 건수: {len(records)}건"
     )
     requests.post(
@@ -488,6 +677,16 @@ def send_telegram(records: list[Notice], dry_run: bool) -> None:
     )
 
     lines: list[str] = ["<b>[크롤링 결과 요약]</b>", ""]
+    if not records:
+        lines.append("- 이번 실행 신규 게시물 없음")
+        detail = "\n".join(lines).strip()
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={"chat_id": chat_id, "text": detail, "parse_mode": "HTML", "disable_web_page_preview": True},
+            timeout=30,
+        )
+        return
+
     for source in ("LH", "i-SH", "GH"):
         src_records = [r for r in records if r.source == source]
         if not src_records:
@@ -536,13 +735,15 @@ def run(from_date: date, dry_run: bool, output_xlsx: str) -> dict:
             writer, sheet_name="GH", index=False
         )
 
-    new_records = append_new_rows_to_sheet(all_records, dry_run=dry_run)
-    send_telegram(new_records, dry_run=dry_run)
+    new_records, run_meta = sync_records_to_gsheet(all_records, dry_run=dry_run)
+    send_telegram(new_records, dry_run=dry_run, run_meta=run_meta)
 
     return {
         "from_date": from_date.isoformat(),
         "counts": {"LH": len(lh), "iSH": len(ish), "GH": len(gh), "ALL": len(all_records)},
         "new_count": len(new_records),
+        "run_id": run_meta["run_id"],
+        "run_at_kst": run_meta["run_at_kst"],
         "output_xlsx": out_path,
         "dry_run": dry_run,
     }
@@ -554,6 +755,11 @@ def main() -> None:
     parser.add_argument("--days", type=int, default=365, help="fallback range in days")
     parser.add_argument("--dry-run", action="store_true", help="skip sheets/telegram writes")
     parser.add_argument(
+        "--seed-xlsx",
+        default="",
+        help="Seed gsheet index/archive from an existing workbook, then exit.",
+    )
+    parser.add_argument(
         "--output-xlsx",
         default=f"output/notices_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
         help="local output workbook path",
@@ -564,6 +770,20 @@ def main() -> None:
         fd = datetime.strptime(args.from_date, "%Y-%m-%d").date()
     else:
         fd = date.today() - timedelta(days=args.days)
+
+    if args.seed_xlsx:
+        records = load_notices_from_xlsx(args.seed_xlsx)
+        new_records, run_meta = sync_records_to_gsheet(records, dry_run=args.dry_run)
+        result = {
+            "seed_xlsx": args.seed_xlsx,
+            "seed_total": len(records),
+            "seed_new": len(new_records),
+            "run_id": run_meta["run_id"],
+            "run_at_kst": run_meta["run_at_kst"],
+            "dry_run": args.dry_run,
+        }
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
 
     result = run(fd, dry_run=args.dry_run, output_xlsx=args.output_xlsx)
     print(json.dumps(result, ensure_ascii=False, indent=2))
