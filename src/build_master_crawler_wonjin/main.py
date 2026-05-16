@@ -26,6 +26,16 @@ SOURCE_BOARD_URL = {
     "i-SH": "https://www.i-sh.co.kr/app/lay2/program/S48T561C564/www/brd/m_255/list.do?multi_itm_seq=8",
     "GH": "https://buy.gh.or.kr/land/svc/announce/land_announce_list.jsp?MenuId=SVC_ANN",
 }
+INDEX_TAB = "overall"
+RUNLOG_TAB = "scheduler_run_logs"
+SOURCE_TABS = {
+    "LH": "LH",
+    "i-SH": "iSH",
+    "GH": "GH",
+}
+ALLOWED_TABS = {INDEX_TAB, RUNLOG_TAB, "GUIDE", *SOURCE_TABS.values()}
+DEFAULT_HOURLY_LOOKBACK_DAYS = 2
+DEFAULT_BOOTSTRAP_DAYS = 365
 
 
 @dataclass(frozen=True)
@@ -569,6 +579,80 @@ def _ensure_worksheet(sh: gspread.Spreadsheet, title: str, headers: list[str]) -
     return ws
 
 
+def _validate_tab_names(index_tab: str, runlog_tab: str, source_tabs: dict[str, str]) -> None:
+    used = [index_tab, runlog_tab, *source_tabs.values()]
+    invalid = [name for name in used if name not in ALLOWED_TABS]
+    if invalid:
+        raise RuntimeError(
+            "Invalid Google Sheet tab name(s): "
+            + ", ".join(invalid)
+            + f" | allowed={sorted(ALLOWED_TABS)}"
+        )
+
+
+def _open_sheet_from_env() -> gspread.Spreadsheet | None:
+    sheet_id = os.environ.get("GOOGLE_SHEET_ID", "").strip()
+    if not sheet_id:
+        return None
+    gc = gsheet_client_from_env()
+    return gc.open_by_key(sheet_id)
+
+
+def _get_last_run_kst_date(sh: gspread.Spreadsheet) -> date | None:
+    try:
+        ws = sh.worksheet(RUNLOG_TAB)
+    except gspread.WorksheetNotFound:
+        return None
+
+    vals = ws.get_all_values()
+    if len(vals) <= 1:
+        return None
+
+    header = vals[0]
+    if "run_at_kst" not in header:
+        return None
+    idx = header.index("run_at_kst")
+
+    for row in reversed(vals[1:]):
+        if len(row) <= idx:
+            continue
+        raw = row[idx].strip()
+        if not raw:
+            continue
+        try:
+            return datetime.strptime(raw, "%Y-%m-%d %H:%M").date()
+        except ValueError:
+            continue
+    return None
+
+
+def resolve_from_date(
+    explicit_from_date: str,
+    mode: str,
+    bootstrap_days: int,
+    hourly_lookback_days: int,
+) -> date:
+    if explicit_from_date:
+        return datetime.strptime(explicit_from_date, "%Y-%m-%d").date()
+
+    today_kst = datetime.now(ZoneInfo(KST)).date()
+    if mode == "bootstrap":
+        return today_kst - timedelta(days=bootstrap_days)
+
+    try:
+        sh = _open_sheet_from_env()
+    except Exception:
+        sh = None
+
+    if sh is not None:
+        last_run_date = _get_last_run_kst_date(sh)
+        if last_run_date is not None:
+            # Dates on source boards are day-level, so keep a 1-day safety buffer.
+            return last_run_date - timedelta(days=1)
+
+    return today_kst - timedelta(days=hourly_lookback_days)
+
+
 def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[Notice], dict[str, str]]:
     run_utc = datetime.now(UTC).replace(microsecond=0)
     run_kst = run_utc.astimezone(ZoneInfo(KST))
@@ -582,20 +666,14 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
     if dry_run:
         return records, meta
 
-    sheet_id = os.environ.get("GOOGLE_SHEET_ID", "").strip()
-    if not sheet_id:
+    sh = _open_sheet_from_env()
+    if sh is None:
         return records, meta
 
-    index_tab = os.environ.get("GOOGLE_SHEET_INDEX_TAB", "overall").strip()
-    runlog_tab = os.environ.get("GOOGLE_SHEET_RUNLOG_TAB", "scheduler_run_logs").strip()
-    source_tabs = {
-        "LH": os.environ.get("GOOGLE_SHEET_TAB_LH", "LH").strip(),
-        "i-SH": os.environ.get("GOOGLE_SHEET_TAB_ISH", "iSH").strip(),
-        "GH": os.environ.get("GOOGLE_SHEET_TAB_GH", "GH").strip(),
-    }
-
-    gc = gsheet_client_from_env()
-    sh = gc.open_by_key(sheet_id)
+    index_tab = INDEX_TAB
+    runlog_tab = RUNLOG_TAB
+    source_tabs = SOURCE_TABS
+    _validate_tab_names(index_tab, runlog_tab, source_tabs)
 
     ws_index = _ensure_worksheet(
         sh,
@@ -661,14 +739,26 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
         ],
     )
 
+    # Build a global existing keyset from index + source archive tabs.
     existing = load_existing_keys(ws_index)
     for src in ("LH", "i-SH", "GH"):
         existing |= load_existing_keys(ws_source[src])
-    new_records = [r for r in records if r.key() not in existing]
+    # De-duplicate within this run first, then keep only keys not present in sheets.
+    seen_in_run: set[tuple[str, str]] = set()
+    unique_records: list[Notice] = []
+    for r in records:
+        k = r.key()
+        if k in seen_in_run:
+            continue
+        seen_in_run.add(k)
+        unique_records.append(r)
 
-    if records:
+    new_records = [r for r in unique_records if r.key() not in existing]
+
+    # Source archive should also store only newly discovered rows.
+    if new_records:
         for src in ("LH", "i-SH", "GH"):
-            src_rows = [r for r in records if r.source == src]
+            src_rows = [r for r in new_records if r.source == src]
             if not src_rows:
                 continue
             ws_source[src].append_rows(
@@ -725,7 +815,7 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
         )
 
     counts = {"LH": 0, "i-SH": 0, "GH": 0}
-    for r in records:
+    for r in unique_records:
         counts[r.source] = counts.get(r.source, 0) + 1
 
     ws_runlog.append_row(
@@ -733,7 +823,7 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
             meta["run_id"],
             meta["run_at_kst"],
             meta["run_at_utc"],
-            len(records),
+            len(unique_records),
             len(new_records),
             counts.get("LH", 0),
             counts.get("i-SH", 0),
@@ -814,18 +904,19 @@ def run(from_date: date, dry_run: bool, output_xlsx: str) -> dict:
     gh, gh_rows = crawl_gh(from_date)
     all_records = sorted(lh + ish + gh, key=lambda x: (x.posted_at, x.source, x.notice_id))
 
-    out_path = output_xlsx
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    with pd.ExcelWriter(out_path, engine="openpyxl", datetime_format="yyyy-mm-dd") as writer:
-        _typed_df(lh_rows, date_cols=["공고일", "마감일"], int_cols=["번호", "조회수"]).to_excel(
-            writer, sheet_name="LH", index=False
-        )
-        _typed_df(ish_rows, date_cols=["등록일"], int_cols=["번호", "조회수", "seq"]).to_excel(
-            writer, sheet_name="iSH", index=False
-        )
-        _typed_df(gh_rows, date_cols=["공고일", "마감일"], int_cols=["번호", "annSeq"]).to_excel(
-            writer, sheet_name="GH", index=False
-        )
+    out_path = output_xlsx.strip()
+    if out_path:
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with pd.ExcelWriter(out_path, engine="openpyxl", datetime_format="yyyy-mm-dd") as writer:
+            _typed_df(lh_rows, date_cols=["공고일", "마감일"], int_cols=["번호", "조회수"]).to_excel(
+                writer, sheet_name="LH", index=False
+            )
+            _typed_df(ish_rows, date_cols=["등록일"], int_cols=["번호", "조회수", "seq"]).to_excel(
+                writer, sheet_name="iSH", index=False
+            )
+            _typed_df(gh_rows, date_cols=["공고일", "마감일"], int_cols=["번호", "annSeq"]).to_excel(
+                writer, sheet_name="GH", index=False
+            )
 
     new_records, run_meta = sync_records_to_gsheet(all_records, dry_run=dry_run)
     send_telegram(new_records, dry_run=dry_run, run_meta=run_meta)
@@ -843,8 +934,15 @@ def run(from_date: date, dry_run: bool, output_xlsx: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Public notice crawler (LH/i-SH/GH)")
+    parser.add_argument("--mode", choices=["hourly", "bootstrap"], default="hourly")
     parser.add_argument("--from-date", default="", help="YYYY-MM-DD")
-    parser.add_argument("--days", type=int, default=365, help="fallback range in days")
+    parser.add_argument("--bootstrap-days", type=int, default=DEFAULT_BOOTSTRAP_DAYS, help="bootstrap range in days")
+    parser.add_argument(
+        "--hourly-lookback-days",
+        type=int,
+        default=DEFAULT_HOURLY_LOOKBACK_DAYS,
+        help="fallback hourly lookback in days when no prior run metadata exists",
+    )
     parser.add_argument("--dry-run", action="store_true", help="skip sheets/telegram writes")
     parser.add_argument(
         "--seed-xlsx",
@@ -853,15 +951,17 @@ def main() -> None:
     )
     parser.add_argument(
         "--output-xlsx",
-        default=f"output/notices_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-        help="local output workbook path",
+        default="",
+        help="optional local output workbook path",
     )
     args = parser.parse_args()
 
-    if args.from_date:
-        fd = datetime.strptime(args.from_date, "%Y-%m-%d").date()
-    else:
-        fd = date.today() - timedelta(days=args.days)
+    fd = resolve_from_date(
+        explicit_from_date=args.from_date,
+        mode=args.mode,
+        bootstrap_days=args.bootstrap_days,
+        hourly_lookback_days=args.hourly_lookback_days,
+    )
 
     if args.seed_xlsx:
         records = load_notices_from_xlsx(args.seed_xlsx)

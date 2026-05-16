@@ -6,6 +6,7 @@
 - Output channels:
   - Google Sheet vault (archive + index + run log)
   - Telegram dual-message alert
+  - local `xlsx` only for explicit bootstrap/manual verification
 
 ## Google Sheet (Production Vault)
 - Spreadsheet URL: `https://docs.google.com/spreadsheets/d/1sZ9vSfGk9-FIjPTS_Khv7ESBIczlfWjhKpHOFqeQ8n8/edit`
@@ -31,13 +32,15 @@
   - never used for new-set judgment
 
 ## NEWSET EVAL LOGIC (Frozen)
-1. Crawl current run records from all sources.
-2. Append full current run rows to source archive tabs (`LH`, `iSH`, `GH`).
-3. Load existing keys from `overall` and each source tab.
-4. Compare current run keys against existing key set.
-5. Append only unseen rows to `overall`.
-6. Append run metrics to `scheduler_run_logs`.
-7. Send Telegram:
+1. Hourly mode resolves `from_date` from the latest `scheduler_run_logs.run_at_kst` with a 1-day safety buffer.
+2. If no prior run metadata exists, hourly mode falls back to a short lookback window.
+3. Bootstrap mode is the only mode intended for 1-year backfill / workbook generation.
+4. Crawl current run records from all sources.
+5. Load existing keys from `overall` and each source tab.
+6. Compare current run keys against existing key set.
+7. Append only unseen rows to source archive tabs (`LH`, `iSH`, `GH`) and `overall`.
+8. Append run metrics to `scheduler_run_logs`.
+9. Send Telegram:
    - 1st message: run briefing (always sent, even when 0 new)
    - 2nd message: per-source new summary + board links + latest 5 each
 
@@ -48,12 +51,13 @@
   - `GOOGLE_SHEET_ID`
   - `TELEGRAM_BOT_TOKEN`
   - `TELEGRAM_CHAT_ID`
-- Optional GitHub Actions variables:
-  - `GOOGLE_SHEET_INDEX_TAB` (default: `overall`)
-  - `GOOGLE_SHEET_RUNLOG_TAB` (default: `scheduler_run_logs`)
-  - `GOOGLE_SHEET_TAB_LH` (default: `LH`)
-  - `GOOGLE_SHEET_TAB_ISH` (default: `iSH`)
-  - `GOOGLE_SHEET_TAB_GH` (default: `GH`)
+- Tab names are fixed in code:
+  - `overall`
+  - `scheduler_run_logs`
+  - `LH`
+  - `iSH`
+  - `GH`
+  - `GUIDE`
 
 ## Notes
 - Backward compatibility guard is implemented for old shifted rows during key load.

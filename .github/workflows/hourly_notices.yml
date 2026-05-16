@@ -15,6 +15,10 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: hourly-public-notice-crawler
+  cancel-in-progress: false
+
 jobs:
   crawl:
     runs-on: ubuntu-latest
@@ -33,11 +37,6 @@ jobs:
         env:
           GDRIVE_CREDS: ${{ secrets.GDRIVE_CREDS }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-          GOOGLE_SHEET_INDEX_TAB: ${{ vars.GOOGLE_SHEET_INDEX_TAB }}
-          GOOGLE_SHEET_RUNLOG_TAB: ${{ vars.GOOGLE_SHEET_RUNLOG_TAB }}
-          GOOGLE_SHEET_TAB_LH: ${{ vars.GOOGLE_SHEET_TAB_LH }}
-          GOOGLE_SHEET_TAB_ISH: ${{ vars.GOOGLE_SHEET_TAB_ISH }}
-          GOOGLE_SHEET_TAB_GH: ${{ vars.GOOGLE_SHEET_TAB_GH }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
@@ -52,10 +51,10 @@ jobs:
             FROM_ARG="--from-date ${{ github.event.inputs.from_date }}"
           fi
 
-          python -m build_master_crawler_wonjin.main $DRY_FLAG $FROM_ARG
+          python -m build_master_crawler_wonjin.main --mode hourly $DRY_FLAG $FROM_ARG
 
       - name: Upload workbook artifact
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.from_date != ''
         uses: actions/upload-artifact@v4
         with:
           name: notices-workbook

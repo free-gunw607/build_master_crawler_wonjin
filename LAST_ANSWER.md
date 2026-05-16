@@ -9,6 +9,8 @@
 - first 1-year crawl workbook generated with source table-oriented sheets
 - v1 freeze completed: normalization/new-set rules + sheet schema + dual Telegram format fixed
 - production vault sheet structure finalized and GUIDE tab documented
+- duplicated accumulation issue fixed in sheet sync path (`new-only append`)
+- scheduler reliability hardening applied (workflow concurrency + watchdog recovery dispatch)
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work

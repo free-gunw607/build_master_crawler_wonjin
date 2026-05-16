@@ -27,9 +27,13 @@ v1_frozen
 - frozen tab structure (`scheduler_run_logs`, `overall`, `LH`, `iSH`, `GH`, `GUIDE`)
 - cleaned legacy tabs and header-row contamination from production sheet
 - updated workflow env contract for per-tab variables
+- fixed sheet duplication bug: source tabs now append only `new_records` instead of full fetched set
+- added in-run dedup guard before sheet sync (`source + raw_id_value`)
+- added workflow-level concurrency lock for hourly crawler
+- upgraded schedule watchdog from alert-only to auto-recovery dispatch
 
 ## Current blockers
-- none critical
+- none critical (schedule reliability mitigated by watchdog auto-recovery)
 
 ## Capability and MCP status
 - required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API
@@ -52,7 +56,7 @@ v1_frozen
 - resume pointer: `src/build_master_crawler_wonjin/main.py`
 
 ## Deliverable proof
-- latest artifact path(s): `src/build_master_crawler_wonjin/main.py`, `.github/workflows/hourly_notices.yml`, `docs/V1_FREEZE.md`, `docs/SOURCE_FREEZE.md`, `STATUS.md`
+- latest artifact path(s): `src/build_master_crawler_wonjin/main.py`, `.github/workflows/hourly_notices.yml`, `.github/workflows/schedule_watchdog.yml`, `docs/V1_FREEZE.md`, `docs/SOURCE_FREEZE.md`, `STATUS.md`
 - proof timestamp: 2026-05-16
 - note: credentials are configured via GitHub secrets/vars only (no raw secret in repo)
 

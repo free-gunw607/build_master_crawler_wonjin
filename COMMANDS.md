@@ -99,10 +99,10 @@ cd ~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-PYTHONPATH=src python -m build_master_crawler_wonjin.main --days 365 --dry-run
+PYTHONPATH=src python -m build_master_crawler_wonjin.main --mode bootstrap --bootstrap-days 365 --output-xlsx output/notices_bootstrap.xlsx --dry-run
 ```
 
 ```bash
-# production mode (Sheets + Telegram)
-PYTHONPATH=src python -m build_master_crawler_wonjin.main --days 365
+# production hourly mode (Sheets + Telegram, no local xlsx)
+PYTHONPATH=src python -m build_master_crawler_wonjin.main --mode hourly
 ```

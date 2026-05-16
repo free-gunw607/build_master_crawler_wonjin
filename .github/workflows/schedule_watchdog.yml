@@ -9,7 +9,7 @@ jobs:
   detect-missing-schedule:
     runs-on: ubuntu-latest
     permissions:
-      actions: read
+      actions: write
       contents: read
     steps:
       - name: Check latest schedule run age
@@ -56,8 +56,16 @@ jobs:
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${text}" >/dev/null
 
-      - name: Fail when missing/stale
+      - name: Trigger recovery run
+        if: steps.check.outputs.status != 'ok'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run hourly_notices.yml -f dry_run=false
+          echo "Recovery dispatch triggered for hourly_notices.yml"
+
+      - name: Record stale status
         if: steps.check.outputs.status != 'ok'
         run: |
           echo "${{ steps.check.outputs.message }}"
-          exit 1
