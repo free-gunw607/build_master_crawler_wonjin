@@ -42,7 +42,7 @@
 
 서울 i-SH 후보는 기존 i-SH와 raw ID가 59/59 겹쳐 `i-SH`에 병합했다. 별도 source identity나 Sheets tab을 만들지 않는다.
 
-두 파일럿은 아직 `enabled: false`다. adapter와 parser unit smoke는 구현되었고, 실제 dry-run에서 다음 건수를 확인했다.
+두 파일럿은 parser/detail/dedup/schema/Telegram smoke를 통과해 `active_v2`로 승격했고, 실제 운영 workflow에서 Sheets tab 생성과 write path를 검증한다.
 
 - `BMC`: 85건
 - `UMCA`: 16건

@@ -62,7 +62,7 @@ Each source gets its own registry status, fixture/smoke evidence, and activation
 - Common registry-driven selection: implemented locally.
 - BMC/UMCA adapters: implemented and dry-run validated.
 - DUDC/DCCO/SCTC/JNDC adapters: implemented and current-page dry-run validated; production gates still pending.
-- BMC/UMCA Sheets/Telegram common wiring: implemented locally, still production-disabled.
+- BMC/UMCA Sheets/Telegram common wiring: enabled for controlled production verification.
 - Existing production sources: remain enabled and approved.
 - Next automatic task: complete BMC/UMCA quality-gate evidence, then process the first remaining source family.
 

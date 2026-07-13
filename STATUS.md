@@ -44,6 +44,7 @@ v1_frozen
 - added registry-driven onboarding guard and overnight execution plan
 - first source family dry-run passed: BMC 22, UMCA 5, DUDC 38, DCCO 6, SCTC 4, JNDC 6
 - hardened Telegram delivery for HTML escaping, message chunking, 429 retry, API response checks, and missing-secret visibility
+- promoted BMC and UMCA to `active_v2` for controlled production verification; later-family sources remain disabled
 
 ## Current blockers
 - none critical (schedule reliability mitigated by watchdog auto-recovery)
@@ -64,7 +65,7 @@ v1_frozen
 2. monitor hourly logs and source HTML drift
 3. add source-specific regression smoke checks
 4. investigate the exact failed GitHub Actions run behind repeated watchdog notifications
-5. complete production gates for the first six new adapters without enabling them prematurely
+5. verify the controlled BMC/UMCA production run and then continue the remaining source-family gates
 6. follow `docs/OVERNIGHT_PLAN.md` and `.agent/queue/tasks.json` for unattended source-family batches
 
 ## Phase marker

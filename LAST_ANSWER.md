@@ -20,6 +20,7 @@
 - overnight onboarding plan recorded in `docs/OVERNIGHT_PLAN.md`; queue now tracks source-family batches
 - first source family dry-run passed for BMC, UMCA, DUDC, DCCO, SCTC, and JNDC; all remain production-disabled
 - Telegram notifier hardened against HTML, size, rate-limit, API-response, and missing-secret failures
+- BMC and UMCA promoted to `active_v2` for controlled production Sheets/Telegram verification
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work
