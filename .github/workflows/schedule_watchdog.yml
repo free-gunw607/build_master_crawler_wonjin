@@ -82,7 +82,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh workflow run hourly_notices.yml --repo "${repo}" -f dry_run=false
+          gh workflow run hourly_notices.yml --repo "${{ github.repository }}" -f dry_run=false
           echo "Recovery dispatch triggered for hourly_notices.yml"
 
       - name: Record stale status
