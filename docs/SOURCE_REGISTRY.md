@@ -25,4 +25,41 @@
 - `candidate`: 기존 소스와 게시판 범위 중복 확인이 필요한 소스
 - `planned`: URL만 등록했고 parser 조사는 시작하지 않은 소스
 
+## 1차 조사 결과
+
+2026-07-14 기준 실제 목록 응답을 확인했다. 확인된 소스들은 대체로 서버 렌더링 목록을 제공하지만 detail 식별자 방식은 서로 다르다.
+
+- `ish_custom_variant`: 기존 i-SH와 같은 `getDetailView(seq)` 계열
+- `server_board_href`: table 행의 일반 detail href에 식별자가 포함된 계열
+- `server_board_onclick`: `dataId` 또는 유사 식별자가 onclick/detail URL에 포함된 계열
+- `server_query_board`: query string의 `board_idx` 등으로 detail을 여는 계열
+- `legacy_php_board`, `legacy_zboard`: 오래된 PHP/zboard 계열
+
+첫 파일럿은 다음 2개로 확정한다.
+
+1. `BMC`: 일반 detail href 기반 서버 게시판
+2. `UMCA`: onclick/dataId 기반 서버 게시판
+
+서울 i-SH 후보는 기존 i-SH와 raw ID가 59/59 겹쳐 `i-SH`에 병합했다. 별도 source identity나 Sheets tab을 만들지 않는다.
+
+두 파일럿은 아직 `enabled: false`다. adapter와 parser unit smoke는 구현되었고, 실제 dry-run에서 다음 건수를 확인했다.
+
+- `BMC`: 85건
+- `UMCA`: 16건
+
+두 게시판은 각각 목적이 명확한 전용 분양공고판이므로, 현재 정책은 키워드 강제 필터보다 게시판 범위 전체 수집이다. 그 전까지는 `--include-pilots`가 `--dry-run` 없이 실행되지 않는다.
+
+## 첫 source family dry-run 결과
+
+2026-07-14 기준 실제 목록에서 다음 adapter가 동작했다.
+
+- `BMC`: 22건
+- `UMCA`: 5건
+- `DUDC`: 38건
+- `DCCO`: 6건
+- `SCTC`: 4건
+- `JNDC`: 6건
+
+이 소스들은 adapter·current-page dry-run 단계까지 완료했지만, Google Sheets 실제 tab 생성과 Telegram production alert 검증 전이므로 `enabled: false`, `production_approved: false`를 유지한다.
+
 이 registry는 신규 소스를 production에 자동 연결하지 않는다. 활성화는 parser와 운영 검증이 끝난 뒤 별도 변경으로 수행한다.

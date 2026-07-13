@@ -38,6 +38,12 @@ v1_frozen
 - added external-watchdog design path using Google Apps Script trigger + GitHub dispatch
 - registered the full import source list in `config/source_registry.json` with new sources disabled
 - added a 45-minute cooldown to GitHub-native recovery dispatch to prevent repeated recovery attempts
+- classified registered source pages and selected `BMC` and `UMCA` as the first parser pilots
+- confirmed `ISH_SEOUL_CANDIDATE` is a 59/59 raw-ID duplicate of existing `i-SH` and merged it into that source
+- implemented dry-run-only pilot adapters and parser unit smoke tests for BMC and UMCA
+- added registry-driven onboarding guard and overnight execution plan
+- first source family dry-run passed: BMC 22, UMCA 5, DUDC 38, DCCO 6, SCTC 4, JNDC 6
+- hardened Telegram delivery for HTML escaping, message chunking, 429 retry, API response checks, and missing-secret visibility
 
 ## Current blockers
 - none critical (schedule reliability mitigated by watchdog auto-recovery)
@@ -58,7 +64,8 @@ v1_frozen
 2. monitor hourly logs and source HTML drift
 3. add source-specific regression smoke checks
 4. investigate the exact failed GitHub Actions run behind repeated watchdog notifications
-5. classify registry sources and select the first 2-3 parser pilots
+5. complete production gates for the first six new adapters without enabling them prematurely
+6. follow `docs/OVERNIGHT_PLAN.md` and `.agent/queue/tasks.json` for unattended source-family batches
 
 ## Phase marker
 - current: `PHASE-3-V1-FROZEN`

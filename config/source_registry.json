@@ -15,6 +15,7 @@
       "enabled": true,
       "status": "active_v1",
       "parser_family": "lh_custom",
+      "production_approved": true,
       "notes": "Existing production adapter; raw id is panId."
     },
     {
@@ -26,6 +27,7 @@
       "enabled": true,
       "status": "active_v1",
       "parser_family": "ish_custom",
+      "production_approved": true,
       "notes": "Existing production adapter; raw id is seq."
     },
     {
@@ -37,6 +39,7 @@
       "enabled": true,
       "status": "active_v1",
       "parser_family": "gh_custom",
+      "production_approved": true,
       "notes": "Existing production adapter; raw id is annSeq."
     },
     {
@@ -46,9 +49,10 @@
       "url": "https://www.i-sh.co.kr/main/lay2/program/S1T294C299/www/brd/m_255/list.do?multi_itm_seq=8",
       "keywords": ["공고"],
       "enabled": false,
-      "status": "candidate",
-      "parser_family": "unknown",
-      "notes": "Likely related to the active i-SH source; verify scope before creating a separate source identity."
+      "status": "merged_into_existing",
+      "parser_family": "ish_custom_variant",
+      "merged_into": "i-SH",
+      "notes": "Review confirmed 59/59 raw IDs overlap with active i-SH. Keep the URL as an alternate endpoint reference; do not create a separate source identity."
     },
     {
       "source_id": "IH",
@@ -58,7 +62,7 @@
       "keywords": ["공고"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
+      "parser_family": "server_board_href",
       "notes": "Inspect list/detail identifiers and pagination before implementation."
     },
     {
@@ -68,9 +72,11 @@
       "url": "https://www.bmc.busan.kr/board/list2.do?boardId=BBS_0000002&menuCd=DOM_000000101001002000&contentsSid=217&cpath=",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
-      "parser_family": "unknown",
-      "notes": "Whitespace-sensitive keyword filter."
+      "status": "pilot_selected",
+      "parser_family": "server_board_href",
+      "production_approved": false,
+      "collection_policy": "board_scope",
+      "notes": "Pilot 1. Server-rendered dedicated land-supply board with ordinary detail hrefs. Collect board scope; keywords are discovery hints, not a title filter."
     },
     {
       "source_id": "DUDC",
@@ -80,8 +86,10 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
-      "notes": "Whitespace-sensitive keyword filter."
+      "parser_family": "server_query_board",
+      "production_approved": false,
+      "collection_policy": "board_scope",
+      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
     },
     {
       "source_id": "DCCO",
@@ -91,8 +99,10 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
-      "notes": "Whitespace-sensitive keyword filter."
+      "parser_family": "server_query_board",
+      "production_approved": false,
+      "collection_policy": "board_scope",
+      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
     },
     {
       "source_id": "GMCC",
@@ -103,7 +113,7 @@
       "enabled": false,
       "status": "planned",
       "parser_family": "unknown",
-      "notes": "Whitespace-sensitive keyword filter."
+      "notes": "Initial probe was reset by the remote server; retry with browser/session headers before implementation."
     },
     {
       "source_id": "UMCA",
@@ -112,9 +122,11 @@
       "url": "https://www.umca.co.kr/umca/bbs/list.do?bbsId=BBS_0000000000000003&mId=001001003000000000",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
-      "parser_family": "unknown",
-      "notes": "Whitespace-sensitive keyword filter."
+      "status": "pilot_selected",
+      "parser_family": "server_board_onclick",
+      "production_approved": false,
+      "collection_policy": "board_scope",
+      "notes": "Pilot 2. Server-rendered dedicated sale-notice board with dataId embedded in onclick/detail URL. Collect board scope; keywords are discovery hints, not a title filter."
     },
     {
       "source_id": "SCTC",
@@ -124,8 +136,10 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
-      "notes": "Verify whether the board is directly relevant to land supply notices."
+      "parser_family": "server_href_board",
+      "production_approved": false,
+      "collection_policy": "board_scope",
+      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
     },
     {
       "source_id": "GH_SALE_RENTAL_CANDIDATE",
@@ -135,7 +149,7 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "candidate",
-      "parser_family": "unknown",
+      "parser_family": "gh_server_query_board",
       "notes": "Verify overlap with the active GH land system before assigning a separate identity."
     },
     {
@@ -146,7 +160,7 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
+      "parser_family": "legacy_php_board",
       "notes": "Whitespace-sensitive keyword filter."
     },
     {
@@ -157,7 +171,7 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
+      "parser_family": "legacy_zboard",
       "notes": "Whitespace-sensitive keyword filter."
     },
     {
@@ -168,7 +182,7 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
+      "parser_family": "server_onclick_board",
       "notes": "Whitespace-sensitive keyword filter."
     },
     {
@@ -179,7 +193,7 @@
       "keywords": ["공급공고", "공급 공고", "수의계약"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
+      "parser_family": "server_onclick_board",
       "notes": "Multiple keyword conditions require explicit inclusion policy."
     },
     {
@@ -190,8 +204,10 @@
       "keywords": ["공급공고", "공급 공고", "수의계약"],
       "enabled": false,
       "status": "planned",
-      "parser_family": "unknown",
-      "notes": "Multiple keyword conditions require explicit inclusion policy."
+      "parser_family": "server_href_board",
+      "production_approved": false,
+      "collection_policy": "board_scope",
+      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
     },
     {
       "source_id": "GBDC",

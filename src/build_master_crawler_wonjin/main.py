@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
+import time
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 import re
+from pathlib import Path
 from typing import Iterable
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import gspread
 import pandas as pd
@@ -20,11 +24,23 @@ SOURCE_DISPLAY = {
     "LH": "LH청약플러스",
     "i-SH": "SH인터넷청약시스템",
     "GH": "GH 토지분양시스템",
+    "BMC": "부산도시공사",
+    "UMCA": "울산도시공사",
+    "DUDC": "대구도시개발공사",
+    "DCCO": "대전도시공사",
+    "SCTC": "세종도시교통공사",
+    "JNDC": "전남개발공사",
 }
 SOURCE_BOARD_URL = {
     "LH": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancList.do?mi=1062",
     "i-SH": "https://www.i-sh.co.kr/app/lay2/program/S48T561C564/www/brd/m_255/list.do?multi_itm_seq=8",
     "GH": "https://buy.gh.or.kr/land/svc/announce/land_announce_list.jsp?MenuId=SVC_ANN",
+    "BMC": "https://www.bmc.busan.kr/board/list2.do?boardId=BBS_0000002&menuCd=DOM_000000101001002000&contentsSid=217&cpath=",
+    "UMCA": "https://www.umca.co.kr/umca/bbs/list.do?bbsId=BBS_0000000000000003&mId=001001003000000000",
+    "DUDC": "https://www.dudc.or.kr/ko/page.do?mnu_uid=101&appId=sale",
+    "DCCO": "https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1",
+    "SCTC": "https://www.sctc.kr/bbs/BBSS2110052040247196",
+    "JNDC": "https://www.jndc.co.kr/web/main/bbs/parcelout",
 }
 INDEX_TAB = "overall"
 RUNLOG_TAB = "scheduler_run_logs"
@@ -33,9 +49,24 @@ SOURCE_TABS = {
     "i-SH": "iSH",
     "GH": "GH",
 }
-ALLOWED_TABS = {INDEX_TAB, RUNLOG_TAB, "GUIDE", *SOURCE_TABS.values()}
+SOURCE_TAB_CATALOG = {
+    **SOURCE_TABS,
+    "BMC": "BMC",
+    "UMCA": "UMCA",
+    "DUDC": "DUDC",
+    "DCCO": "DCCO",
+    "SCTC": "SCTC",
+    "JNDC": "JNDC",
+}
+ALLOWED_TABS = {INDEX_TAB, RUNLOG_TAB, "GUIDE", *SOURCE_TAB_CATALOG.values()}
 DEFAULT_HOURLY_LOOKBACK_DAYS = 2
 DEFAULT_BOOTSTRAP_DAYS = 365
+PILOT_SOURCES = ("BMC", "UMCA", "DUDC", "DCCO", "SCTC", "JNDC")
+DEFAULT_BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+    "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+}
+REGISTRY_PATH = Path(__file__).resolve().parents[2] / "config" / "source_registry.json"
 
 
 @dataclass(frozen=True)
@@ -82,6 +113,23 @@ class Notice:
         ]
 
 
+def load_source_registry() -> list[dict[str, object]]:
+    if not REGISTRY_PATH.exists():
+        raise RuntimeError(f"Source registry is missing: {REGISTRY_PATH}")
+    data = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    sources = data.get("sources")
+    if not isinstance(sources, list):
+        raise RuntimeError("Source registry must contain a sources list")
+    for source in sources:
+        if not isinstance(source, dict) or not source.get("source_id"):
+            raise RuntimeError("Every source registry entry needs a source_id")
+        if source.get("enabled") is True and source.get("production_approved", True) is not True:
+            raise RuntimeError(
+                f"Source {source['source_id']} is enabled without production_approved=true"
+            )
+    return sources
+
+
 def _parse_dot_date(s: str) -> date | None:
     s = (s or "").strip()
     if not s:
@@ -108,7 +156,8 @@ def _id_sort_num(source: str, raw_id: str) -> int:
     if source in ("i-SH", "GH"):
         digits = re.sub(r"\D", "", raw)
         return int(digits) if digits else -1
-    return -1
+    digits = re.sub(r"\D", "", raw)
+    return int(digits) if digits else -1
 
 
 def crawl_lh(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
@@ -407,6 +456,452 @@ def crawl_gh(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     return notices, table_rows
 
 
+def _date_from_row(tr: BeautifulSoup) -> str:
+    """Return the last date-like cell in a board row."""
+    for td in reversed(tr.find_all("td")):
+        text = _clean_text(td.get_text(" ", strip=True))
+        if _parse_dot_date(text):
+            return text
+    return ""
+
+
+def _parse_ish_seoul_page(html: str) -> tuple[list[Notice], list[dict[str, str]]]:
+    soup = BeautifulSoup(html, "lxml")
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    for a in soup.select("a[onclick*='getDetailView']"):
+        tr = a.find_parent("tr")
+        if tr is None:
+            continue
+        match = re.search(r"getDetailView\(['\"]([^'\"]+)", a.get("onclick", ""))
+        seq = match.group(1).strip() if match else ""
+        if not seq:
+            continue
+        tds = tr.find_all("td")
+        posted = _date_from_row(tr)
+        title = _clean_text(a.get_text(" ", strip=True))
+        detail_url = (
+            "https://www.i-sh.co.kr/main/lay2/program/S1T294C299/www/brd/m_255/view.do"
+            f"?seq={seq}&multi_itm_seq=8"
+        )
+        notices.append(
+            Notice(
+                source="ISH_SEOUL_CANDIDATE",
+                notice_id=seq,
+                raw_id_type="seq",
+                raw_id_value=seq,
+                id_sort_num=_id_sort_num("i-SH", seq),
+                title=title,
+                posted_at=posted,
+                deadline_at="",
+                status="",
+                detail_url=detail_url,
+                attachments="Y" if tr.select_one("a[href*='download'], a[onclick*='download']") else "",
+                area="서울",
+                category="토지",
+                views=_clean_text(tds[-1].get_text(" ", strip=True)) if tds else "",
+            )
+        )
+        table_rows.append(
+            {
+                "번호": _clean_text(tds[0].get_text(" ", strip=True)) if tds else "",
+                "제목": title,
+                "등록일": posted,
+                "seq": seq,
+                "detail_url": detail_url,
+            }
+        )
+    return notices, table_rows
+
+
+def crawl_ish_seoul_pilot(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    session = requests.Session()
+    session.headers.update(DEFAULT_BROWSER_HEADERS)
+    list_url = "https://www.i-sh.co.kr/main/lay2/program/S1T294C299/www/brd/m_255/list.do?multi_itm_seq=8"
+    resp = session.get(list_url, timeout=30)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "lxml")
+    form = soup.find("form", attrs={"name": "mainform"})
+    payload = {inp.get("name"): inp.get("value", "") for inp in form.select("input[name]")} if form else {}
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for page in range(1, 121):
+        payload["page"] = str(page)
+        r = session.post(list_url, data=payload, timeout=30)
+        r.raise_for_status()
+        page_notices, page_rows = _parse_ish_seoul_page(r.text)
+        if not page_notices:
+            break
+        stop = False
+        for notice, row in zip(page_notices, page_rows):
+            posted_date = _parse_dot_date(notice.posted_at)
+            if posted_date and posted_date < from_date:
+                stop = True
+                continue
+            if notice.key() in seen:
+                continue
+            seen.add(notice.key())
+            notices.append(notice)
+            table_rows.append(row)
+        if stop:
+            break
+    return notices, table_rows
+
+
+def _parse_bmc_page(html: str) -> tuple[list[Notice], list[dict[str, str]]]:
+    soup = BeautifulSoup(html, "lxml")
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    for tr in soup.select("table tbody tr"):
+        a = tr.select_one("a[href*='view.do'][href*='dataSid=']")
+        if a is None:
+            continue
+        query = parse_qs(urlparse(a.get("href", "")).query)
+        data_sid = (query.get("dataSid") or [""])[0].strip()
+        if not data_sid:
+            continue
+        title = _clean_text(a.get_text(" ", strip=True))
+        posted = _date_from_row(tr)
+        detail_url = urljoin("https://www.bmc.busan.kr", a.get("href", ""))
+        tds = tr.find_all("td")
+        views = _clean_text(tds[-1].get_text(" ", strip=True)) if tds else ""
+        notices.append(
+            Notice(
+                source="BMC",
+                notice_id=data_sid,
+                raw_id_type="dataSid",
+                raw_id_value=data_sid,
+                id_sort_num=_id_sort_num("BMC", data_sid),
+                title=title,
+                posted_at=posted,
+                deadline_at="",
+                status="",
+                detail_url=detail_url,
+                attachments="Y" if tr.select_one("a[href*='file'], a[class*='file']") else "",
+                area="부산",
+                category="토지",
+                views=views,
+            )
+        )
+        table_rows.append(
+            {
+                "번호": _clean_text(tds[0].get_text(" ", strip=True)) if tds else "",
+                "제목": title,
+                "작성일": posted,
+                "dataSid": data_sid,
+                "detail_url": detail_url,
+            }
+        )
+    return notices, table_rows
+
+
+def crawl_bmc_pilot(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    session = requests.Session()
+    session.headers.update(DEFAULT_BROWSER_HEADERS)
+    base_url = "https://www.bmc.busan.kr/board/list2.do"
+    params = {
+        "boardId": "BBS_0000002",
+        "menuCd": "DOM_000000101001002000",
+        "contentsSid": "217",
+        "cpath": "",
+        "orderBy": "DATA_SID DESC",
+        "paging": "ok",
+    }
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for page in range(1, 41):
+        params["startPage"] = str(page)
+        r = session.get(base_url, params=params, timeout=30)
+        r.raise_for_status()
+        page_notices, page_rows = _parse_bmc_page(r.text)
+        if not page_notices:
+            break
+        stop = False
+        for notice, row in zip(page_notices, page_rows):
+            posted_date = _parse_dot_date(notice.posted_at)
+            if posted_date and posted_date < from_date:
+                stop = True
+                continue
+            if notice.key() in seen:
+                continue
+            seen.add(notice.key())
+            notices.append(notice)
+            table_rows.append(row)
+        if stop:
+            break
+    return notices, table_rows
+
+
+def _parse_umca_page(html: str) -> tuple[list[Notice], list[dict[str, str]]]:
+    soup = BeautifulSoup(html, "lxml")
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    for tr in soup.select("table tbody tr"):
+        a = tr.select_one("a[onclick*='fn_view'], a[href*='dataId=']")
+        if a is None:
+            continue
+        match = re.search(r"(?:fn_view\(['\"]|dataId=)(\d+)", a.get("onclick", "") + a.get("href", ""))
+        data_id = match.group(1) if match else ""
+        if not data_id:
+            continue
+        title = _clean_text(a.get_text(" ", strip=True))
+        posted = _date_from_row(tr)
+        detail_url = urljoin("https://www.umca.co.kr/umca/bbs/list.do", a.get("href", ""))
+        tds = tr.find_all("td")
+        notices.append(
+            Notice(
+                source="UMCA",
+                notice_id=data_id,
+                raw_id_type="dataId",
+                raw_id_value=data_id,
+                id_sort_num=_id_sort_num("UMCA", data_id),
+                title=title,
+                posted_at=posted,
+                deadline_at="",
+                status="",
+                detail_url=detail_url,
+                attachments="Y" if "첨부" in tr.get_text(" ", strip=True) else "",
+                area="울산",
+                category="토지",
+                views=_clean_text(tds[2].get_text(" ", strip=True)) if len(tds) > 2 else "",
+            )
+        )
+        table_rows.append(
+            {
+                "번호": _clean_text(tds[0].get_text(" ", strip=True)) if tds else "",
+                "제목": title,
+                "작성일": posted,
+                "dataId": data_id,
+                "detail_url": detail_url,
+            }
+        )
+    return notices, table_rows
+
+
+def crawl_umca_pilot(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    session = requests.Session()
+    session.headers.update(DEFAULT_BROWSER_HEADERS)
+    list_url = "https://www.umca.co.kr/umca/bbs/list.do?bbsId=BBS_0000000000000003&mId=001001003000000000"
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for page in range(1, 41):
+        r = session.get(list_url, params={"page": page}, timeout=30)
+        r.raise_for_status()
+        page_notices, page_rows = _parse_umca_page(r.text)
+        if not page_notices:
+            break
+        stop = False
+        for notice, row in zip(page_notices, page_rows):
+            posted_date = _parse_dot_date(notice.posted_at)
+            if posted_date and posted_date < from_date:
+                stop = True
+                continue
+            if notice.key() in seen:
+                continue
+            seen.add(notice.key())
+            notices.append(notice)
+            table_rows.append(row)
+        if stop:
+            break
+    return notices, table_rows
+
+
+def _parse_href_family_page(
+    html: str,
+    *,
+    source: str,
+    link_selector: str,
+    id_pattern: str,
+    raw_id_type: str,
+    detail_base: str,
+    area: str,
+) -> tuple[list[Notice], list[dict[str, str]]]:
+    soup = BeautifulSoup(html, "lxml")
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    for tr in soup.select("table tbody tr"):
+        a = tr.select_one(link_selector)
+        if a is None:
+            continue
+        link = a.get("href", "")
+        match = re.search(id_pattern, link)
+        raw_id = match.group(1).strip() if match else ""
+        if not raw_id:
+            continue
+        title = _clean_text(a.get_text(" ", strip=True))
+        posted = _date_from_row(tr)
+        detail_url = urljoin(detail_base, link)
+        tds = tr.find_all("td")
+        views = _clean_text(tds[-1].get_text(" ", strip=True)) if tds else ""
+        notices.append(
+            Notice(
+                source=source,
+                notice_id=raw_id,
+                raw_id_type=raw_id_type,
+                raw_id_value=raw_id,
+                id_sort_num=_id_sort_num(source, raw_id),
+                title=title,
+                posted_at=posted,
+                deadline_at="",
+                status="",
+                detail_url=detail_url,
+                attachments="Y" if tr.select_one("a[href*='file'], a[onclick*='file']") else "",
+                area=area,
+                category="토지",
+                views=views,
+            )
+        )
+        table_rows.append(
+            {
+                "번호": _clean_text(tds[0].get_text(" ", strip=True)) if tds else "",
+                "제목": title,
+                "작성일": posted,
+                raw_id_type: raw_id,
+                "detail_url": detail_url,
+            }
+        )
+    return notices, table_rows
+
+
+def _crawl_simple_family(
+    *,
+    source: str,
+    url: str,
+    params: dict[str, str],
+    page_param: str,
+    parser_kwargs: dict[str, str],
+    from_date: date,
+    max_pages: int = 40,
+) -> tuple[list[Notice], list[dict[str, str]]]:
+    session = requests.Session()
+    session.headers.update(DEFAULT_BROWSER_HEADERS)
+    notices: list[Notice] = []
+    table_rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for page in range(1, max_pages + 1):
+        page_params = dict(params)
+        page_params[page_param] = str(page)
+        response = session.get(url, params=page_params, timeout=30)
+        response.raise_for_status()
+        page_notices, page_rows = _parse_href_family_page(response.text, **parser_kwargs)
+        if not page_notices:
+            break
+        stop = False
+        for notice, row in zip(page_notices, page_rows):
+            posted_date = _parse_dot_date(notice.posted_at)
+            if posted_date and posted_date < from_date:
+                stop = True
+                continue
+            if notice.key() in seen:
+                continue
+            seen.add(notice.key())
+            notices.append(notice)
+            table_rows.append(row)
+        if stop:
+            break
+    return notices, table_rows
+
+
+def crawl_dudc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="DUDC",
+        url="https://www.dudc.or.kr/ko/page.do",
+        params={"mnu_uid": "101", "appId": "sale"},
+        page_param="pageNo",
+        parser_kwargs={
+            "source": "DUDC",
+            "link_selector": "a[href*='board_idx=']",
+            "id_pattern": r"board_idx=(\d+)",
+            "raw_id_type": "board_idx",
+            "detail_base": "https://www.dudc.or.kr/ko/page.do",
+            "area": "대구",
+        },
+        from_date=from_date,
+    )
+
+
+def crawl_dcco(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="DCCO",
+        url="https://www.dcco.kr/web/board/list.do",
+        params={"mId": "37", "ts_categoryradio": "1"},
+        page_param="pageIndex",
+        parser_kwargs={
+            "source": "DCCO",
+            "link_selector": "a[href*='brdIdx=']",
+            "id_pattern": r"brdIdx=(\d+)",
+            "raw_id_type": "brdIdx",
+            "detail_base": "https://www.dcco.kr/web/board/",
+            "area": "대전",
+        },
+        from_date=from_date,
+    )
+
+
+def crawl_sctc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="SCTC",
+        url="https://www.sctc.kr/bbs/BBSS2110052040247196",
+        params={},
+        page_param="page",
+        parser_kwargs={
+            "source": "SCTC",
+            "link_selector": "a[href*='/bbs/view/']",
+            "id_pattern": r"/(BBSW[^/?]+)/?",
+            "raw_id_type": "bbs_id",
+            "detail_base": "https://www.sctc.kr",
+            "area": "세종",
+        },
+        from_date=from_date,
+        max_pages=10,
+    )
+
+
+def crawl_jndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="JNDC",
+        url="https://www.jndc.co.kr/web/main/bbs/parcelout",
+        params={
+            "sortOrder": "REG_DT",
+            "sortDirection": "DESC",
+            "bbsId": "parcelout",
+            "pstNtcYn": "false",
+        },
+        page_param="cp",
+        parser_kwargs={
+            "source": "JNDC",
+            "link_selector": "a[href*='/parcelout/']",
+            "id_pattern": r"/parcelout/(\d+)",
+            "raw_id_type": "post_id",
+            "detail_base": "https://www.jndc.co.kr",
+            "area": "전남",
+        },
+        from_date=from_date,
+    )
+
+
+def crawl_source(source_id: str, from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    crawlers = {
+        "LH": crawl_lh,
+        "i-SH": crawl_ish,
+        "GH": crawl_gh,
+        "BMC": crawl_bmc_pilot,
+        "UMCA": crawl_umca_pilot,
+        "DUDC": crawl_dudc,
+        "DCCO": crawl_dcco,
+        "SCTC": crawl_sctc,
+        "JNDC": crawl_jndc,
+    }
+    try:
+        crawler = crawlers[source_id]
+    except KeyError as exc:
+        raise RuntimeError(f"No adapter is registered for source: {source_id}") from exc
+    return crawler(from_date)
+
+
 def to_df(records: Iterable[Notice]) -> pd.DataFrame:
     rows = [
         {
@@ -661,7 +1156,11 @@ def resolve_from_date(
     return today_kst - timedelta(days=hourly_lookback_days)
 
 
-def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[Notice], dict[str, str]]:
+def sync_records_to_gsheet(
+    records: list[Notice],
+    dry_run: bool,
+    source_ids: Iterable[str] | None = None,
+) -> tuple[list[Notice], dict[str, str]]:
     run_utc = datetime.now(UTC).replace(microsecond=0)
     run_kst = run_utc.astimezone(ZoneInfo(KST))
     run_id = run_kst.strftime("%Y%m%d%H%M")
@@ -680,7 +1179,12 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
 
     index_tab = INDEX_TAB
     runlog_tab = RUNLOG_TAB
-    source_tabs = SOURCE_TABS
+    requested_sources = list(source_ids or SOURCE_TABS.keys())
+    source_tabs = {
+        source_id: SOURCE_TAB_CATALOG[source_id]
+        for source_id in requested_sources
+        if source_id in SOURCE_TAB_CATALOG
+    }
     _validate_tab_names(index_tab, runlog_tab, source_tabs)
 
     ws_index = _ensure_worksheet(
@@ -732,24 +1236,32 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
         )
         for src, tab in source_tabs.items()
     }
+    metric_names = {"i-SH": "ish"}
+    runlog_headers = [
+        "run_id",
+        "run_at_kst",
+        "run_at_utc",
+        "fetched_total",
+        "new_total",
+        *[
+            f"fetched_{metric_names.get(source_id, source_id.lower().replace('-', '_'))}"
+            for source_id in source_tabs
+        ],
+    ]
     ws_runlog = _ensure_worksheet(
         sh,
         runlog_tab,
-        [
-            "run_id",
-            "run_at_kst",
-            "run_at_utc",
-            "fetched_total",
-            "new_total",
-            "fetched_lh",
-            "fetched_ish",
-            "fetched_gh",
-        ],
+        runlog_headers,
     )
+    existing_runlog_headers = ws_runlog.row_values(1)
+    if existing_runlog_headers:
+        for column, header in enumerate(runlog_headers, start=1):
+            if header not in existing_runlog_headers:
+                ws_runlog.update_cell(1, column, header)
 
     # Build a global existing keyset from index + source archive tabs.
     existing = load_existing_keys(ws_index)
-    for src in ("LH", "i-SH", "GH"):
+    for src in source_tabs:
         existing |= load_existing_keys(ws_source[src])
     # De-duplicate within this run first, then keep only keys not present in sheets.
     seen_in_run: set[tuple[str, str]] = set()
@@ -771,7 +1283,7 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
 
     # Source archive should also store only newly discovered rows.
     if new_records:
-        for src in ("LH", "i-SH", "GH"):
+        for src in source_tabs:
             src_rows = [r for r in new_records if r.source == src]
             if not src_rows:
                 continue
@@ -830,7 +1342,7 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
             value_input_option="RAW",
         )
 
-    counts = {"LH": 0, "i-SH": 0, "GH": 0}
+    counts = {src: 0 for src in source_tabs}
     for r in unique_records:
         counts[r.source] = counts.get(r.source, 0) + 1
 
@@ -841,20 +1353,64 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
             meta["run_at_utc"],
             len(unique_records),
             len(new_records),
-            counts.get("LH", 0),
-            counts.get("i-SH", 0),
-            counts.get("GH", 0),
+            *[counts.get(source_id, 0) for source_id in source_tabs],
         ],
         value_input_option="RAW",
     )
     return new_records, meta
 
 
+def _telegram_post(token: str, chat_id: str, text: str, *, parse_mode: str = "HTML") -> None:
+    for attempt in range(3):
+        response = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": parse_mode,
+                "disable_web_page_preview": True,
+            },
+            timeout=30,
+        )
+        if response.status_code == 429 and attempt < 2:
+            try:
+                retry_after = int(response.json().get("parameters", {}).get("retry_after", 2))
+            except (ValueError, TypeError, json.JSONDecodeError):
+                retry_after = 2
+            time.sleep(min(max(retry_after, 1), 30))
+            continue
+        response.raise_for_status()
+        payload = response.json()
+        if payload.get("ok") is not True:
+            raise RuntimeError(f"Telegram API rejected message: {payload}")
+        return
+    raise RuntimeError("Telegram API rate limit retry exhausted")
+
+
+def _chunk_telegram_lines(lines: list[str], max_chars: int = 3800) -> list[str]:
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for line in lines:
+        extra = len(line) + (1 if current else 0)
+        if current and current_len + extra > max_chars:
+            chunks.append("\n".join(current))
+            current = []
+            current_len = 0
+        current.append(line)
+        current_len += len(line) + (1 if len(current) > 1 else 0)
+    if current:
+        chunks.append("\n".join(current))
+    return chunks or [""]
+
+
 def send_telegram(records: list[Notice], dry_run: bool, run_meta: dict[str, str]) -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
-    if dry_run or not token or not chat_id:
+    if dry_run:
         return
+    if not token or not chat_id:
+        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID for non-dry run")
     kst_now = datetime.now(ZoneInfo(KST))
     run_seq = kst_now.hour + 1
     run_time = run_meta.get("run_at_kst", kst_now.strftime("%Y-%m-%d %H:%M"))
@@ -868,24 +1424,16 @@ def send_telegram(records: list[Notice], dry_run: bool, run_meta: dict[str, str]
         f"- 시간맵(현재): {time_map}\n"
         f"- 신규 건수: {len(records)}건"
     )
-    requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data={"chat_id": chat_id, "text": header, "parse_mode": "HTML", "disable_web_page_preview": True},
-        timeout=30,
-    )
+    _telegram_post(token, chat_id, header)
 
     lines: list[str] = ["<b>[크롤링 결과 요약]</b>", ""]
     if not records:
         lines.append("- 이번 실행 신규 게시물 없음")
         detail = "\n".join(lines).strip()
-        requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data={"chat_id": chat_id, "text": detail, "parse_mode": "HTML", "disable_web_page_preview": True},
-            timeout=30,
-        )
+        _telegram_post(token, chat_id, detail)
         return
 
-    for source in ("LH", "i-SH", "GH"):
+    for source in SOURCE_TAB_CATALOG:
         src_records = [r for r in records if r.source == source]
         if not src_records:
             continue
@@ -893,58 +1441,87 @@ def send_telegram(records: list[Notice], dry_run: bool, run_meta: dict[str, str]
             key=lambda x: (_parse_dot_date(x.posted_at) or date.min, x.id_sort_num, x.notice_id),
             reverse=True,
         )
-        src_name = SOURCE_DISPLAY[source]
-        board_url = SOURCE_BOARD_URL[source]
+        src_name = html.escape(SOURCE_DISPLAY.get(source, source))
+        board_url = SOURCE_BOARD_URL.get(source, "")
         lines.append(f"<b>[{src_name}] 신규 {len(src_records)}건 (최신 5건)</b>")
-        lines.append(f"- 게시판 바로가기: <a href=\"{board_url}\">[목록]</a>")
+        if board_url:
+            lines.append(f"- 게시판 바로가기: <a href=\"{html.escape(board_url, quote=True)}\">[목록]</a>")
         for r in src_records[:5]:
             d = _parse_dot_date(r.posted_at)
             d_str = d.strftime("%m-%d") if d else "-"
             lines.append(
-                f"- {d_str} | {r.title} | {src_name} | "
-                f"<a href=\"{r.detail_url}\">[열기]</a>"
+                f"- {html.escape(d_str)} | {html.escape(r.title)} | {src_name} | "
+                f"<a href=\"{html.escape(r.detail_url, quote=True)}\">[열기]</a>"
             )
         lines.append("")
 
-    detail = "\n".join(lines).strip()
-    requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data={"chat_id": chat_id, "text": detail, "parse_mode": "HTML", "disable_web_page_preview": True},
-        timeout=30,
+    for detail in _chunk_telegram_lines(lines):
+        _telegram_post(token, chat_id, detail.strip())
+
+
+def run(from_date: date, dry_run: bool, output_xlsx: str, include_pilots: bool = False) -> dict:
+    registry = load_source_registry()
+    enabled_sources = [
+        str(item["source_id"])
+        for item in registry
+        if item.get("enabled") is True
+    ]
+    if include_pilots:
+        if not dry_run:
+            raise RuntimeError("Pilot sources are dry-run only until their Sheets tabs and alert contract are approved")
+        enabled_sources.extend(source for source in PILOT_SOURCES if source not in enabled_sources)
+
+    source_records: dict[str, list[Notice]] = {}
+    source_rows: dict[str, list[dict[str, str]]] = {}
+    for source_id in enabled_sources:
+        records, rows = crawl_source(source_id, from_date)
+        source_records[source_id] = records
+        source_rows[source_id] = rows
+    all_records = sorted(
+        [record for records in source_records.values() for record in records],
+        key=lambda x: (x.posted_at, x.source, x.notice_id),
     )
-
-
-def run(from_date: date, dry_run: bool, output_xlsx: str) -> dict:
-    lh, lh_rows = crawl_lh(from_date)
-    ish, ish_rows = crawl_ish(from_date)
-    gh, gh_rows = crawl_gh(from_date)
-    all_records = sorted(lh + ish + gh, key=lambda x: (x.posted_at, x.source, x.notice_id))
 
     out_path = output_xlsx.strip()
     if out_path:
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        output_dir = os.path.dirname(out_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
         with pd.ExcelWriter(out_path, engine="openpyxl", datetime_format="yyyy-mm-dd") as writer:
-            _typed_df(lh_rows, date_cols=["공고일", "마감일"], int_cols=["번호", "조회수"]).to_excel(
-                writer, sheet_name="LH", index=False
-            )
-            _typed_df(ish_rows, date_cols=["등록일"], int_cols=["번호", "조회수", "seq"]).to_excel(
-                writer, sheet_name="iSH", index=False
-            )
-            _typed_df(gh_rows, date_cols=["공고일", "마감일"], int_cols=["번호", "annSeq"]).to_excel(
-                writer, sheet_name="GH", index=False
-            )
+            source_export_specs = {
+                "LH": (["공고일", "마감일"], ["번호", "조회수"]),
+                "i-SH": (["등록일"], ["번호", "조회수", "seq"]),
+                "GH": (["공고일", "마감일"], ["번호", "annSeq"]),
+                "BMC": (["작성일"], ["번호", "조회수", "dataSid"]),
+                "UMCA": (["작성일"], ["번호", "조회수", "dataId"]),
+                "DUDC": (["작성일"], ["번호", "조회수", "board_idx"]),
+                "DCCO": (["작성일"], ["번호", "조회수", "brdIdx"]),
+                "SCTC": (["작성일"], ["번호", "조회수", "bbs_id"]),
+                "JNDC": (["작성일"], ["번호", "조회수", "post_id"]),
+            }
+            for source_id, rows in source_rows.items():
+                date_cols, int_cols = source_export_specs.get(source_id, ([], ["번호"]))
+                _typed_df(rows, date_cols=date_cols, int_cols=int_cols).to_excel(
+                    writer, sheet_name=SOURCE_TABS.get(source_id, source_id)[:31], index=False
+                )
 
-    new_records, run_meta = sync_records_to_gsheet(all_records, dry_run=dry_run)
+    new_records, run_meta = sync_records_to_gsheet(
+        all_records,
+        dry_run=dry_run,
+        source_ids=enabled_sources,
+    )
     send_telegram(new_records, dry_run=dry_run, run_meta=run_meta)
 
     return {
         "from_date": from_date.isoformat(),
-        "counts": {"LH": len(lh), "iSH": len(ish), "GH": len(gh), "ALL": len(all_records)},
+        "counts": {**{source_id: len(records) for source_id, records in source_records.items()}, "ALL": len(all_records)},
         "new_count": len(new_records),
         "run_id": run_meta["run_id"],
         "run_at_kst": run_meta["run_at_kst"],
         "output_xlsx": out_path,
         "dry_run": dry_run,
+        "include_pilots": include_pilots,
+        "enabled_sources": enabled_sources,
     }
 
 
@@ -960,6 +1537,11 @@ def main() -> None:
         help="fallback hourly lookback in days when no prior run metadata exists",
     )
     parser.add_argument("--dry-run", action="store_true", help="skip sheets/telegram writes")
+    parser.add_argument(
+        "--include-pilots",
+        action="store_true",
+        help="crawl the selected pilot sources; requires --dry-run until Sheets tabs are approved",
+    )
     parser.add_argument(
         "--seed-xlsx",
         default="",
@@ -993,7 +1575,12 @@ def main() -> None:
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return
 
-    result = run(fd, dry_run=args.dry_run, output_xlsx=args.output_xlsx)
+    result = run(
+        fd,
+        dry_run=args.dry_run,
+        output_xlsx=args.output_xlsx,
+        include_pilots=args.include_pilots,
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

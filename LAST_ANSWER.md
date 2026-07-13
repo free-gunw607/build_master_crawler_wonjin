@@ -14,6 +14,12 @@
 - scheduler reliability hardening applied (workflow concurrency + watchdog recovery dispatch)
 - external watchdog path prepared to escape GitHub schedule single-point failure
 - import source list registered in `config/source_registry.json`; new sources remain disabled
+- first parser pilots selected: `BMC`, `UMCA`
+- `ISH_SEOUL_CANDIDATE` merged into existing `i-SH` after 59/59 raw-ID overlap review
+- dry-run-only adapters and parser smoke tests added for BMC and UMCA
+- overnight onboarding plan recorded in `docs/OVERNIGHT_PLAN.md`; queue now tracks source-family batches
+- first source family dry-run passed for BMC, UMCA, DUDC, DCCO, SCTC, and JNDC; all remain production-disabled
+- Telegram notifier hardened against HTML, size, rate-limit, API-response, and missing-secret failures
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work

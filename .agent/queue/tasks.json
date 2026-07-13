@@ -3,14 +3,44 @@
     {
       "id": "bootstrap-clarify-objective",
       "priority": "high",
-      "status": "queued",
+      "status": "completed",
       "summary": "Clarify the repo-local objective and first approved implementation scope."
     },
     {
       "id": "bootstrap-establish-first-cycle",
       "priority": "high",
-      "status": "queued",
+      "status": "completed",
       "summary": "Start the first implementation cycle while keeping LAST_ANSWER.md and .agent runtime files current."
+    },
+    {
+      "id": "onboarding-common-sheets-telegram",
+      "priority": "high",
+      "status": "completed",
+      "summary": "Complete registry-driven Sheets tabs, runlog counters, Telegram rendering, and activation guard."
+    },
+    {
+      "id": "pilot-bmc-umca-production-gates",
+      "priority": "high",
+      "status": "in_progress",
+      "summary": "Finish BMC and UMCA parser/detail/dedup/schema/alert quality gates without enabling production prematurely."
+    },
+    {
+      "id": "source-family-batch-01",
+      "priority": "normal",
+      "status": "in_progress",
+      "summary": "Implement and validate DUDC, DCCO, SCTC, and JNDC in a controlled batch."
+    },
+    {
+      "id": "source-family-batch-02",
+      "priority": "normal",
+      "status": "queued",
+      "summary": "Implement and validate IH, GMCC, GDCO, and CBDC after access/legacy inspection."
+    },
+    {
+      "id": "source-family-batch-03",
+      "priority": "normal",
+      "status": "queued",
+      "summary": "Implement and validate CNDC, JBDC, GBDC, and GNDC; resolve GH sale/rental overlap separately."
     }
   ]
 }

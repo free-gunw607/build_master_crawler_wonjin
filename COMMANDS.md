@@ -100,6 +100,13 @@ python3 -m json.tool config/source_registry.json
 ```
 
 ```bash
+# selected pilot parser dry-run; does not write Sheets or Telegram
+PYTHONPATH=src python -m build_master_crawler_wonjin.main \
+  --mode hourly --include-pilots --dry-run \
+  --output-xlsx output/pilot_smoke.xlsx
+```
+
+```bash
 cd ~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin
 python3 -m venv .venv
 source .venv/bin/activate
