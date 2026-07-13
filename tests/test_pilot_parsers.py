@@ -109,6 +109,26 @@ class PilotParserTests(unittest.TestCase):
         self.assertEqual(notices[0].raw_id_value, "24800")
         self.assertEqual(rows[0]["brdIdx"], "24800")
 
+    def test_legacy_div_board_parser_extracts_ids(self):
+        html = """
+        <div class='notice'><a href='/main/bbs/bbsMsgDetail.do?msg_seq=172&bcd=sale_lease'>
+          검단 토지 공급공고</a><span>2026-07-10</span></div>
+        <div class='notice'><a href='/zboard/read.do?pd_pkid=6799&lmCode=BBSMSTR_000000000028'>
+          용지공급 적용이율 변경 안내</a><span>2026.07.09</span></div>
+        """
+        notices, _ = _parse_href_family_page(
+            html,
+            source="IH",
+            link_selector="a[href*='bbsMsgDetail.do?']",
+            id_pattern=r"(?:^|[?&])msg_seq=(\d+)",
+            raw_id_type="msg_seq",
+            detail_base="https://www.ih.co.kr",
+            area="인천",
+        )
+        self.assertEqual(len(notices), 1)
+        self.assertEqual(notices[0].raw_id_value, "172")
+        self.assertEqual(notices[0].posted_at, "2026-07-10")
+
 
 if __name__ == "__main__":
     unittest.main()

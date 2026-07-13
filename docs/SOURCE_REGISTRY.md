@@ -22,6 +22,7 @@
 ## 현재 분류 상태
 
 - `active_v1`: 기존 production adapter가 있는 소스
+- `active_v2`: 신규 adapter가 production Sheets/Telegram 경로까지 검증된 소스
 - `candidate`: 기존 소스와 게시판 범위 중복 확인이 필요한 소스
 - `planned`: URL만 등록했고 parser 조사는 시작하지 않은 소스
 
@@ -42,7 +43,7 @@
 
 서울 i-SH 후보는 기존 i-SH와 raw ID가 59/59 겹쳐 `i-SH`에 병합했다. 별도 source identity나 Sheets tab을 만들지 않는다.
 
-두 파일럿은 parser/detail/dedup/schema/Telegram smoke를 통과해 `active_v2`로 승격했고, 실제 운영 workflow에서 Sheets tab 생성과 write path를 검증한다.
+두 파일럿은 parser/detail/dedup/schema/Telegram smoke를 통과해 `active_v2`로 승격했고, 실제 운영 workflow에서 Sheets tab 생성과 write path까지 검증했다. 증거 workflow는 `29280240103`이며 BMC·UMCA가 enabled source로 실행되어 `overall`/runlog/Telegram 경로를 예외 없이 완료했다.
 
 - `BMC`: 85건
 - `UMCA`: 16건
@@ -60,6 +61,6 @@
 - `SCTC`: 4건
 - `JNDC`: 6건
 
-이 소스들은 adapter·current-page dry-run 단계까지 완료했지만, Google Sheets 실제 tab 생성과 Telegram production alert 검증 전이므로 `enabled: false`, `production_approved: false`를 유지한다.
+이 소스들은 adapter·current-page dry-run 단계까지 완료했지만, detail/schema/Telegram production gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
 
 이 registry는 신규 소스를 production에 자동 연결하지 않는다. 활성화는 parser와 운영 검증이 끝난 뒤 별도 변경으로 수행한다.

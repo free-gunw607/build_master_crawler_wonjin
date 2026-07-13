@@ -21,20 +21,20 @@
     {
       "id": "pilot-bmc-umca-production-gates",
       "priority": "high",
-      "status": "in_progress",
-      "summary": "Finish BMC and UMCA parser/detail/dedup/schema/alert quality gates without enabling production prematurely."
+      "status": "completed",
+      "summary": "Completed BMC and UMCA parser/detail/dedup/schema/alert gates and verified controlled production workflow 29280240103."
     },
     {
       "id": "source-family-batch-01",
       "priority": "normal",
       "status": "in_progress",
-      "summary": "Implement and validate DUDC, DCCO, SCTC, and JNDC in a controlled batch."
+      "summary": "Complete detail/schema/Telegram gates for DUDC, DCCO, SCTC, and JNDC; current-page dry-run is already passing and all remain disabled."
     },
     {
       "id": "source-family-batch-02",
       "priority": "normal",
-      "status": "queued",
-      "summary": "Implement and validate IH, GMCC, GDCO, and CBDC after access/legacy inspection."
+      "status": "in_progress",
+      "summary": "IH, GDCO, and CBDC adapters plus legacy/div-board parser smoke are implemented; finish live detail/schema gates and resolve GMCC access behavior."
     },
     {
       "id": "source-family-batch-03",

@@ -61,9 +61,9 @@
       "url": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
       "keywords": ["공고"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
       "parser_family": "server_board_href",
-      "notes": "Inspect list/detail identifiers and pagination before implementation."
+      "notes": "Adapter implemented for bbsMsgDetail.do?msg_seq=; live list response is reachable. Production gates remain disabled."
     },
     {
       "source_id": "BMC",
@@ -159,9 +159,9 @@
       "url": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
       "parser_family": "legacy_php_board",
-      "notes": "Whitespace-sensitive keyword filter."
+      "notes": "Adapter implemented for notice_view.php?intSeq=; live list response is reachable. Production gates remain disabled."
     },
     {
       "source_id": "CBDC",
@@ -170,9 +170,9 @@
       "url": "https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
       "parser_family": "legacy_zboard",
-      "notes": "Whitespace-sensitive keyword filter."
+      "notes": "Adapter implemented for read.do?pd_pkid=; live list response is reachable. Production gates remain disabled."
     },
     {
       "source_id": "CNDC",

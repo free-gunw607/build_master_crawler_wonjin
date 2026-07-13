@@ -16,7 +16,7 @@ v1_frozen
 - keep Sheets schema and GUIDE tab synchronized with code
 - operate hourly production workflow with idempotent delta alerts
 - move recovery trigger outside GitHub schedule domain
-- keep import sources registered but disabled until parser and operational smoke checks pass
+- keep unverified import sources registered but disabled until parser and operational smoke checks pass
 
 ## Recent completed work
 - project created via bootstrap script
@@ -45,9 +45,11 @@ v1_frozen
 - first source family dry-run passed: BMC 22, UMCA 5, DUDC 38, DCCO 6, SCTC 4, JNDC 6
 - hardened Telegram delivery for HTML escaping, message chunking, 429 retry, API response checks, and missing-secret visibility
 - promoted BMC and UMCA to `active_v2` for controlled production verification; later-family sources remain disabled
+- completed controlled BMC/UMCA production workflow `29280240103` successfully; enabled source set was LH, i-SH, GH, BMC, UMCA
+- post-production batch-01 dry-run reconfirmed DUDC 38, DCCO 6, SCTC 4, JNDC 6 at 2026-07-14 04:56 KST
 
 ## Current blockers
-- none critical (schedule reliability mitigated by watchdog auto-recovery)
+- no runtime blocker; batch-01 detail/schema/Telegram gates remain before activation
 
 ## Capability and MCP status
 - required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API
@@ -61,12 +63,11 @@ v1_frozen
 - current stability: frozen baseline
 
 ## Next actions
-1. deploy Google Apps Script watchdog and script properties
-2. monitor hourly logs and source HTML drift
-3. add source-specific regression smoke checks
-4. investigate the exact failed GitHub Actions run behind repeated watchdog notifications
-5. verify the controlled BMC/UMCA production run and then continue the remaining source-family gates
-6. follow `docs/OVERNIGHT_PLAN.md` and `.agent/queue/tasks.json` for unattended source-family batches
+1. complete batch-01 detail/schema/Telegram gates without enabling unverified sources
+2. implement the legacy/access-sensitive batch (IH, GMCC, GDCO, CBDC)
+3. continue the onclick/unknown batch (CNDC, JBDC, GBDC, GNDC)
+4. resolve GH sale/rental candidate overlap before any separate identity
+5. follow `docs/OVERNIGHT_PLAN.md` and `.agent/queue/tasks.json` for unattended source-family batches
 
 ## Phase marker
 - current: `PHASE-3-V1-FROZEN`
@@ -75,7 +76,7 @@ v1_frozen
 
 ## Deliverable proof
 - latest artifact path(s): `src/build_master_crawler_wonjin/main.py`, `.github/workflows/hourly_notices.yml`, `.github/workflows/schedule_watchdog.yml`, `docs/V1_FREEZE.md`, `docs/SOURCE_FREEZE.md`, `STATUS.md`
-- proof timestamp: 2026-05-16
+- proof timestamp: 2026-07-14
 - note: credentials are configured via GitHub secrets/vars only (no raw secret in repo)
 
 ## Relevant anchors

@@ -20,7 +20,8 @@
 - overnight onboarding plan recorded in `docs/OVERNIGHT_PLAN.md`; queue now tracks source-family batches
 - first source family dry-run passed for BMC, UMCA, DUDC, DCCO, SCTC, and JNDC; all remain production-disabled
 - Telegram notifier hardened against HTML, size, rate-limit, API-response, and missing-secret failures
-- BMC and UMCA promoted to `active_v2` for controlled production Sheets/Telegram verification
+- BMC and UMCA promoted to `active_v2` and production-verified in workflow run `29280240103`; the run executed LH, i-SH, GH, BMC, UMCA and completed Sheets/Telegram sync successfully
+- batch-01 current-page post-production dry-run reconfirmed DUDC 38, DCCO 6, SCTC 4, JNDC 6; these remain disabled pending detail/schema/alert gates
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work
@@ -40,7 +41,7 @@
   - `docs/V1_FREEZE.md`
   - `docs/SOURCE_FREEZE.md`
   - `STATUS.md`
-- proof timestamp: `2026-05-16`
+- proof timestamp: `2026-07-14`
 - completion rule: credentials remain outside git and are injected via GitHub secrets/vars
 
 ## Durable handoff path

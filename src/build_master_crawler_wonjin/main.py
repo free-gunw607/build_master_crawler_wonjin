@@ -30,6 +30,9 @@ SOURCE_DISPLAY = {
     "DCCO": "대전도시공사",
     "SCTC": "세종도시교통공사",
     "JNDC": "전남개발공사",
+    "IH": "인천도시공사",
+    "GDCO": "강원도개발공사",
+    "CBDC": "충북개발공사",
 }
 SOURCE_BOARD_URL = {
     "LH": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancList.do?mi=1062",
@@ -41,6 +44,9 @@ SOURCE_BOARD_URL = {
     "DCCO": "https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1",
     "SCTC": "https://www.sctc.kr/bbs/BBSS2110052040247196",
     "JNDC": "https://www.jndc.co.kr/web/main/bbs/parcelout",
+    "IH": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+    "GDCO": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
+    "CBDC": "https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028",
 }
 INDEX_TAB = "overall"
 RUNLOG_TAB = "scheduler_run_logs"
@@ -57,6 +63,9 @@ SOURCE_TAB_CATALOG = {
     "DCCO": "DCCO",
     "SCTC": "SCTC",
     "JNDC": "JNDC",
+    "IH": "IH",
+    "GDCO": "GDCO",
+    "CBDC": "CBDC",
 }
 ALLOWED_TABS = {INDEX_TAB, RUNLOG_TAB, "GUIDE", *SOURCE_TAB_CATALOG.values()}
 DEFAULT_HOURLY_LOOKBACK_DAYS = 2
@@ -465,6 +474,12 @@ def _date_from_row(tr: BeautifulSoup) -> str:
     return ""
 
 
+def _date_from_container(container: BeautifulSoup) -> str:
+    text = _clean_text(container.get_text(" ", strip=True))
+    match = re.search(r"(20\d{2}[.-]\d{1,2}[.-]\d{1,2})", text)
+    return match.group(1) if match else ""
+
+
 def _parse_ish_seoul_page(html: str) -> tuple[list[Notice], list[dict[str, str]]]:
     soup = BeautifulSoup(html, "lxml")
     notices: list[Notice] = []
@@ -763,6 +778,40 @@ def _parse_href_family_page(
                 "detail_url": detail_url,
             }
         )
+    if not notices:
+        # Some legacy boards render list items/divs instead of table rows.
+        # Keep the same Notice contract while using the nearest compact container.
+        seen_ids: set[str] = set()
+        for a in soup.select(link_selector):
+            link = a.get("href", "")
+            match = re.search(id_pattern, link)
+            raw_id = match.group(1).strip() if match else ""
+            if not raw_id or raw_id in seen_ids:
+                continue
+            seen_ids.add(raw_id)
+            container = a.find_parent(["li", "div"]) or a.parent
+            title = _clean_text(a.get_text(" ", strip=True))
+            posted = _date_from_container(container)
+            detail_url = urljoin(detail_base, link)
+            notices.append(
+                Notice(
+                    source=source,
+                    notice_id=raw_id,
+                    raw_id_type=raw_id_type,
+                    raw_id_value=raw_id,
+                    id_sort_num=_id_sort_num(source, raw_id),
+                    title=title,
+                    posted_at=posted,
+                    deadline_at="",
+                    status="",
+                    detail_url=detail_url,
+                    attachments="Y" if container.select_one("a[href*='file'], a[onclick*='file']") else "",
+                    area=area,
+                    category="토지",
+                    views="",
+                )
+            )
+            table_rows.append({"번호": "", "제목": title, "작성일": posted, raw_id_type: raw_id, "detail_url": detail_url})
     return notices, table_rows
 
 
@@ -883,6 +932,63 @@ def crawl_jndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     )
 
 
+def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="IH",
+        url="https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+        params={"cate1": "b", "bcd": "sale_lease", "pgdiv": "land_notice"},
+        page_param="pgno",
+        parser_kwargs={
+            "source": "IH",
+            "link_selector": "a[href*='bbsMsgDetail.do?']",
+            "id_pattern": r"(?:^|[?&])msg_seq=(\d+)",
+            "raw_id_type": "msg_seq",
+            "detail_base": "https://www.ih.co.kr",
+            "area": "인천",
+        },
+        from_date=from_date,
+        max_pages=20,
+    )
+
+
+def crawl_gdco(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="GDCO",
+        url="https://www.gdco.co.kr/customer/notice_list.php",
+        params={"strBoardID": "NOTI", "pageSize": "10"},
+        page_param="page",
+        parser_kwargs={
+            "source": "GDCO",
+            "link_selector": "a[href*='notice_view.php?']",
+            "id_pattern": r"(?:^|[?&])intSeq=(\d+)",
+            "raw_id_type": "intSeq",
+            "detail_base": "https://www.gdco.co.kr",
+            "area": "강원",
+        },
+        from_date=from_date,
+        max_pages=20,
+    )
+
+
+def crawl_cbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="CBDC",
+        url="https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028",
+        params={},
+        page_param="pageIndex",
+        parser_kwargs={
+            "source": "CBDC",
+            "link_selector": "a[href*='read.do?']",
+            "id_pattern": r"(?:^|[?&])pd_pkid=(\d+)",
+            "raw_id_type": "pd_pkid",
+            "detail_base": "https://www.cbdc.co.kr",
+            "area": "충북",
+        },
+        from_date=from_date,
+        max_pages=20,
+    )
+
+
 def crawl_source(source_id: str, from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     crawlers = {
         "LH": crawl_lh,
@@ -894,6 +1000,9 @@ def crawl_source(source_id: str, from_date: date) -> tuple[list[Notice], list[di
         "DCCO": crawl_dcco,
         "SCTC": crawl_sctc,
         "JNDC": crawl_jndc,
+        "IH": crawl_ih,
+        "GDCO": crawl_gdco,
+        "CBDC": crawl_cbdc,
     }
     try:
         crawler = crawlers[source_id]
