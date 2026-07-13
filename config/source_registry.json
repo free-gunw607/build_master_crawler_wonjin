@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "new_sources_default_enabled": false,
+    "identity_key": ["source", "raw_id_value"],
+    "activation_rule": "A source is enabled only after parser smoke, dedup, sheet, and alert checks pass."
+  },
+  "sources": [
+    {
+      "source_id": "LH",
+      "region": "전국",
+      "display_name": "LH청약플러스",
+      "url": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancList.do?mi=1062",
+      "keywords": ["공고"],
+      "enabled": true,
+      "status": "active_v1",
+      "parser_family": "lh_custom",
+      "notes": "Existing production adapter; raw id is panId."
+    },
+    {
+      "source_id": "i-SH",
+      "region": "서울",
+      "display_name": "SH인터넷청약시스템",
+      "url": "https://www.i-sh.co.kr/app/lay2/program/S48T561C564/www/brd/m_255/list.do?multi_itm_seq=8",
+      "keywords": ["공고"],
+      "enabled": true,
+      "status": "active_v1",
+      "parser_family": "ish_custom",
+      "notes": "Existing production adapter; raw id is seq."
+    },
+    {
+      "source_id": "GH",
+      "region": "경기",
+      "display_name": "GH 토지분양시스템",
+      "url": "https://buy.gh.or.kr/land/svc/announce/land_announce_list.jsp?MenuId=SVC_ANN",
+      "keywords": ["공고"],
+      "enabled": true,
+      "status": "active_v1",
+      "parser_family": "gh_custom",
+      "notes": "Existing production adapter; raw id is annSeq."
+    },
+    {
+      "source_id": "ISH_SEOUL_CANDIDATE",
+      "region": "서울",
+      "display_name": "SH 공고 게시판 후보",
+      "url": "https://www.i-sh.co.kr/main/lay2/program/S1T294C299/www/brd/m_255/list.do?multi_itm_seq=8",
+      "keywords": ["공고"],
+      "enabled": false,
+      "status": "candidate",
+      "parser_family": "unknown",
+      "notes": "Likely related to the active i-SH source; verify scope before creating a separate source identity."
+    },
+    {
+      "source_id": "IH",
+      "region": "인천",
+      "display_name": "인천도시공사",
+      "url": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+      "keywords": ["공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Inspect list/detail identifiers and pagination before implementation."
+    },
+    {
+      "source_id": "BMC",
+      "region": "부산",
+      "display_name": "부산도시공사",
+      "url": "https://www.bmc.busan.kr/board/list2.do?boardId=BBS_0000002&menuCd=DOM_000000101001002000&contentsSid=217&cpath=",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "DUDC",
+      "region": "대구",
+      "display_name": "대구도시개발공사",
+      "url": "https://www.dudc.or.kr/ko/page.do?mnu_uid=101&appId=sale",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "DCCO",
+      "region": "대전",
+      "display_name": "대전도시공사",
+      "url": "https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "GMCC",
+      "region": "광주",
+      "display_name": "광주도시공사",
+      "url": "https://www.gmcc.co.kr/board.es?mid=a10402030000&bid=0018&cg_code=C03",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "UMCA",
+      "region": "울산",
+      "display_name": "울산도시공사",
+      "url": "https://www.umca.co.kr/umca/bbs/list.do?bbsId=BBS_0000000000000003&mId=001001003000000000",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "SCTC",
+      "region": "세종",
+      "display_name": "세종도시교통공사/도시개발 게시판",
+      "url": "https://www.sctc.kr/bbs/BBSS2110052040247196",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Verify whether the board is directly relevant to land supply notices."
+    },
+    {
+      "source_id": "GH_SALE_RENTAL_CANDIDATE",
+      "region": "경기",
+      "display_name": "GH 매매·임대 공고 후보",
+      "url": "https://gh.or.kr/gh/announcement-of-salerental001.do?srCategoryId=13",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "candidate",
+      "parser_family": "unknown",
+      "notes": "Verify overlap with the active GH land system before assigning a separate identity."
+    },
+    {
+      "source_id": "GDCO",
+      "region": "강원",
+      "display_name": "강원도개발공사",
+      "url": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "CBDC",
+      "region": "충북",
+      "display_name": "충북개발공사",
+      "url": "https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "CNDC",
+      "region": "충남",
+      "display_name": "충남개발공사",
+      "url": "https://www.cndc.kr/bbs/list.do?key=2404080038",
+      "keywords": ["공급공고", "공급 공고"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Whitespace-sensitive keyword filter."
+    },
+    {
+      "source_id": "JBDC",
+      "region": "전북",
+      "display_name": "전북개발공사",
+      "url": "https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
+      "keywords": ["공급공고", "공급 공고", "수의계약"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Multiple keyword conditions require explicit inclusion policy."
+    },
+    {
+      "source_id": "JNDC",
+      "region": "전남",
+      "display_name": "전남개발공사",
+      "url": "https://www.jndc.co.kr/web/main/bbs/parcelout",
+      "keywords": ["공급공고", "공급 공고", "수의계약"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Multiple keyword conditions require explicit inclusion policy."
+    },
+    {
+      "source_id": "GBDC",
+      "region": "경북",
+      "display_name": "경북개발공사",
+      "url": "https://www.gbdc.co.kr/boardlist.do?seqId=0000003631",
+      "keywords": ["공급공고", "공급 공고", "수의계약"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Multiple keyword conditions require explicit inclusion policy."
+    },
+    {
+      "source_id": "GNDC",
+      "region": "경남",
+      "display_name": "경남개발공사",
+      "url": "https://www.gndc.co.kr/boardlist.do?seqId=0000006190",
+      "keywords": ["공급공고", "공급 공고", "수의계약"],
+      "enabled": false,
+      "status": "planned",
+      "parser_family": "unknown",
+      "notes": "Multiple keyword conditions require explicit inclusion policy."
+    }
+  ]
+}

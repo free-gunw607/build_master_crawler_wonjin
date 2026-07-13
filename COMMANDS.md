@@ -95,6 +95,11 @@ Upload a repo snapshot to Google Drive via `gws`, update registry metadata, and 
 ## Public Notice Crawler
 
 ```bash
+# inspect all registered sources and their activation state
+python3 -m json.tool config/source_registry.json
+```
+
+```bash
 cd ~/agent-coding/agent-projects/A4-worker-repos/build_master_crawler_wonjin
 python3 -m venv .venv
 source .venv/bin/activate
@@ -105,4 +110,12 @@ PYTHONPATH=src python -m build_master_crawler_wonjin.main --mode bootstrap --boo
 ```bash
 # production hourly mode (Sheets + Telegram, no local xlsx)
 PYTHONPATH=src python -m build_master_crawler_wonjin.main --mode hourly
+```
+
+```text
+# external watchdog
+Google Apps Script source: ops/google_apps_script_watchdog.js
+Setup guide: docs/EXTERNAL_WATCHDOG_SETUP.md
+Trigger: every 10 minutes
+Action: call GitHub API and dispatch hourly_notices.yml when schedule is stale
 ```

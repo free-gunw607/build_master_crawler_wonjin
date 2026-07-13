@@ -5,7 +5,7 @@ This repository is for Bootstrap a new crawling project scaffold in the A4 worke
 ## V1 Freeze
 - Freeze date: `2026-05-16`
 - Runtime: hourly crawler for LH / i-SH / GH
-- Delta rule: raw-coupled key `(source, raw_id_value)` with idempotent append
+- Delta rule: raw-coupled key `(source, raw_id_value)` with idempotent top-insert (row 2, newest-first)
 - Ops reference: `docs/V1_FREEZE.md`
 
 ## Owner Front Door
@@ -38,6 +38,12 @@ This repository is for Bootstrap a new crawling project scaffold in the A4 worke
 - prefer the simplest reliable implementation route
 - keep repository-local execution reproducible and understandable
 - keep durable handoff files current as work advances
+- register new sources in `config/source_registry.json` before implementing or activating them
+- keep new sources disabled until parser, dedup, Sheets, and Telegram smoke checks pass
+
+## Source registry
+- registry: `config/source_registry.json`
+- onboarding policy: `docs/SOURCE_REGISTRY.md`
 
 ## Policy references
 - global policy: `~/.codex/AGENTS.md`

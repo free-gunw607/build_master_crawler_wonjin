@@ -1,0 +1,48 @@
+서울 (키워드 : ‘공고’)
+https://www.i-sh.co.kr/main/lay2/program/S1T294C299/www/brd/m_255/list.do?multi_itm_seq=8
+
+인천 (키워드 : ‘공고’)
+https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp
+
+부산 (키워드 : ‘공급공고’ & ‘공급 공고’) (띄어쓰기 유의)
+https://www.bmc.busan.kr/board/list2.do?boardId=BBS_0000002&menuCd=DOM_000000101001002000&contentsSid=217&cpath=
+
+대구 (키워드 : ‘공급공고’ & ‘공급 공고’ ) (띄어쓰기 유의)
+https://www.dudc.or.kr/ko/page.do?mnu_uid=101&appId=sale
+
+대전 (키워드 : ‘공급공고’ & ‘공급 공고’ ) (띄어쓰기 유의)
+https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1
+
+광주 (키워드 : ‘공급공고’ & ‘공급 공고’ ) (띄어쓰기 유의)
+https://www.gmcc.co.kr/board.es?mid=a10402030000&bid=0018&cg_code=C03
+
+울산 (키워드 : ‘공급공고’ & ‘공급 공고’ ) (띄어쓰기 유의)
+https://www.umca.co.kr/umca/bbs/list.do?bbsId=BBS_0000000000000003&mId=001001003000000000
+
+세종 (키워드 : ‘공급공고’ & ‘공급 공고’ ) (띄어쓰기 유의)
+https://www.sctc.kr/bbs/BBSS2110052040247196
+
+
+경기도 (키워드 : ‘공급공고’ & “공급 공고”)
+https://gh.or.kr/gh/announcement-of-salerental001.do?srCategoryId=13
+
+강원도 (키워드 : ‘공급공고’ & “공급 공고”)
+https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI
+
+충북 (키워드 : ‘공급공고’ & “공급 공고”)
+https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028
+
+충남 (키워드 : ‘공급공고’ & “공급 공고”)
+https://www.cndc.kr/bbs/list.do?key=2404080038
+
+전북 (키워드 : ‘공급공고’ & “공급 공고” & “수의계약”)
+https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2
+
+전남 (키워드 : ‘공급공고’ & “공급 공고” & “수의계약”)
+https://www.jndc.co.kr/web/main/bbs/parcelout
+
+경북 (키워드 : ‘공급공고’ & “공급 공고” & “수의계약”)
+https://www.gbdc.co.kr/boardlist.do?seqId=0000003631
+
+경남 (키워드 : ‘공급공고’ & “공급 공고” & “수의계약”)
+https://www.gndc.co.kr/boardlist.do?seqId=0000006190

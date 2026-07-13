@@ -762,6 +762,12 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
         unique_records.append(r)
 
     new_records = [r for r in unique_records if r.key() not in existing]
+    # Keep newest records at the top of tabs when writing to sheets.
+    new_records = sorted(
+        new_records,
+        key=lambda x: (_parse_dot_date(x.posted_at) or date.min, x.id_sort_num, x.notice_id),
+        reverse=True,
+    )
 
     # Source archive should also store only newly discovered rows.
     if new_records:
@@ -769,7 +775,7 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
             src_rows = [r for r in new_records if r.source == src]
             if not src_rows:
                 continue
-            ws_source[src].append_rows(
+            ws_source[src].insert_rows(
                 [
                     [
                         r.source,
@@ -792,11 +798,12 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
                     ]
                     for r in src_rows
                 ],
+                row=2,
                 value_input_option="RAW",
             )
 
     if new_records:
-        ws_index.append_rows(
+        ws_index.insert_rows(
             [
                 [
                     r.source,
@@ -819,6 +826,7 @@ def sync_records_to_gsheet(records: list[Notice], dry_run: bool) -> tuple[list[N
                 ]
                 for r in new_records
             ],
+            row=2,
             value_input_option="RAW",
         )
 

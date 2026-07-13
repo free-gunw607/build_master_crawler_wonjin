@@ -10,7 +10,10 @@
 - v1 freeze completed: normalization/new-set rules + sheet schema + dual Telegram format fixed
 - production vault sheet structure finalized and GUIDE tab documented
 - duplicated accumulation issue fixed in sheet sync path (`new-only append`)
+- sheet insertion order changed to newest-first top insert (`row=2`) for `overall`/source tabs
 - scheduler reliability hardening applied (workflow concurrency + watchdog recovery dispatch)
+- external watchdog path prepared to escape GitHub schedule single-point failure
+- import source list registered in `config/source_registry.json`; new sources remain disabled
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work
@@ -20,12 +23,13 @@
 ## Phase status
 - current phase: `PHASE-3-V1-FROZEN`
 - next phase: `PHASE-4-EXTEND-SOURCES`
-- resume pointer: `src/build_master_crawler_wonjin/main.py`
+- resume pointer: `config/source_registry.json`, then `src/build_master_crawler_wonjin/main.py`
 
 ## Deliverable proof
 - artifact path(s):
   - `src/build_master_crawler_wonjin/main.py`
   - `.github/workflows/hourly_notices.yml`
+  - `ops/google_apps_script_watchdog.js`
   - `docs/V1_FREEZE.md`
   - `docs/SOURCE_FREEZE.md`
   - `STATUS.md`

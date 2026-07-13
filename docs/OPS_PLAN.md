@@ -13,8 +13,32 @@
 - GH: `https://buy.gh.or.kr/land/svc/announce/land_announce_list.jsp?MenuId=SVC_ANN`
 
 ## Scheduler
-- GitHub Actions cron: `0 * * * *` (UTC 기준, 매시 정각).
+- GitHub Actions cron: `7 * * * *` (UTC 기준, 매시 7분).
 - Note: GitHub cron can be delayed by a few minutes under load.
+- External watchdog target:
+  - use `Google Apps Script` time trigger every 10 minutes
+  - check latest `hourly_notices.yml` run via GitHub API
+  - if current hour run is missing after grace window, trigger `workflow_dispatch`
+  - Telegram alert on recovery dispatch
+
+## External Watchdog
+- Why:
+  - GitHub `schedule` and GitHub-native watchdog can fail together.
+  - recovery trigger must live outside GitHub scheduler.
+- Chosen mechanism:
+  - Google Apps Script time trigger
+  - no always-on PC required
+  - no VPS required for baseline operation
+- Required secrets in Apps Script properties:
+  - `GITHUB_PAT`
+  - `GITHUB_DEFAULT_BRANCH`
+  - `TELEGRAM_BOT_TOKEN`
+  - `TELEGRAM_CHAT_ID`
+- Required GitHub token scopes:
+  - classic PAT: `repo`, `workflow`
+- Repo hooks:
+  - `hourly_notices.yml` must accept `workflow_dispatch`
+  - external watchdog may trigger manual recovery by GitHub API
 
 ## Incremental Collection Strategy
 - Primary key: `(source, notice_id)`.

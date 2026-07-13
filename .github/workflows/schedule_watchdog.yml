@@ -26,6 +26,7 @@ jobs:
           current_minute_utc="$(date -u +%M)"
           expected_minute=7
           grace_minute=8
+          recovery_cooldown_minutes=45
 
           last_created="$(gh api "repos/${repo}/actions/workflows/${workflow_file}/runs?event=schedule&per_page=1" --jq '.workflow_runs[0].created_at // empty')"
 
@@ -33,6 +34,17 @@ jobs:
             echo "status=missing" >> "$GITHUB_OUTPUT"
             echo "message=[크론 누락] ${workflow_file}의 schedule 실행 이력이 아직 1건도 없습니다." >> "$GITHUB_OUTPUT"
             exit 0
+          fi
+
+          latest_recovery_created="$(gh api "repos/${repo}/actions/workflows/${workflow_file}/runs?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].created_at // empty')"
+          if [ -n "${latest_recovery_created}" ]; then
+            recovery_epoch="$(date -u -d "${latest_recovery_created}" +%s)"
+            recovery_age_minutes="$(( (now_epoch - recovery_epoch) / 60 ))"
+            if [ "${recovery_age_minutes}" -ge 0 ] && [ "${recovery_age_minutes}" -lt "${recovery_cooldown_minutes}" ]; then
+              echo "status=cooldown" >> "$GITHUB_OUTPUT"
+              echo "message=[복구 대기] 최근 recovery 실행이 ${recovery_age_minutes}분 전이라 중복 dispatch를 생략합니다. (created_at=${latest_recovery_created})" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           fi
 
           last_epoch="$(date -u -d "${last_created}" +%s)"
@@ -51,7 +63,7 @@ jobs:
           fi
 
       - name: Notify Telegram on missing/stale schedule
-        if: steps.check.outputs.status != 'ok'
+        if: steps.check.outputs.status == 'stale_current_hour' || steps.check.outputs.status == 'stale' || steps.check.outputs.status == 'missing'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -65,15 +77,15 @@ jobs:
             --data-urlencode "text=${text}" >/dev/null
 
       - name: Trigger recovery run
-        if: steps.check.outputs.status != 'ok'
+        if: steps.check.outputs.status == 'stale_current_hour' || steps.check.outputs.status == 'stale' || steps.check.outputs.status == 'missing'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh workflow run hourly_notices.yml -f dry_run=false
+          gh workflow run hourly_notices.yml --repo "${repo}" -f dry_run=false
           echo "Recovery dispatch triggered for hourly_notices.yml"
 
       - name: Record stale status
-        if: steps.check.outputs.status != 'ok'
+        if: steps.check.outputs.status == 'stale_current_hour' || steps.check.outputs.status == 'stale' || steps.check.outputs.status == 'missing'
         run: |
           echo "${{ steps.check.outputs.message }}"

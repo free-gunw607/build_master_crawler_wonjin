@@ -38,7 +38,7 @@
 4. Crawl current run records from all sources.
 5. Load existing keys from `overall` and each source tab.
 6. Compare current run keys against existing key set.
-7. Append only unseen rows to source archive tabs (`LH`, `iSH`, `GH`) and `overall`.
+7. Insert only unseen rows at top (row 2) of source archive tabs (`LH`, `iSH`, `GH`) and `overall` (newest-first view).
 8. Append run metrics to `scheduler_run_logs`.
 9. Send Telegram:
    - 1st message: run briefing (always sent, even when 0 new)

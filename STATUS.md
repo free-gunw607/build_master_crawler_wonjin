@@ -15,6 +15,8 @@ v1_frozen
 - preserve v1 stability and monitor source selector drift
 - keep Sheets schema and GUIDE tab synchronized with code
 - operate hourly production workflow with idempotent delta alerts
+- move recovery trigger outside GitHub schedule domain
+- keep import sources registered but disabled until parser and operational smoke checks pass
 
 ## Recent completed work
 - project created via bootstrap script
@@ -27,16 +29,22 @@ v1_frozen
 - frozen tab structure (`scheduler_run_logs`, `overall`, `LH`, `iSH`, `GH`, `GUIDE`)
 - cleaned legacy tabs and header-row contamination from production sheet
 - updated workflow env contract for per-tab variables
-- fixed sheet duplication bug: source tabs now append only `new_records` instead of full fetched set
+- fixed sheet duplication bug: source tabs now write only `new_records` instead of full fetched set
+- changed sheet write order: `overall`/source tabs now insert new rows at top (row 2, newest-first)
+- added external cron watchdog runner script (`ops/external_watchdog_runner.py`) for GitHub schedule recovery outside GitHub scheduler domain
 - added in-run dedup guard before sheet sync (`source + raw_id_value`)
 - added workflow-level concurrency lock for hourly crawler
 - upgraded schedule watchdog from alert-only to auto-recovery dispatch
+- added external-watchdog design path using Google Apps Script trigger + GitHub dispatch
+- registered the full import source list in `config/source_registry.json` with new sources disabled
+- added a 45-minute cooldown to GitHub-native recovery dispatch to prevent repeated recovery attempts
 
 ## Current blockers
 - none critical (schedule reliability mitigated by watchdog auto-recovery)
 
 ## Capability and MCP status
 - required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API
+- optional external ops capability: Google Apps Script trigger with GitHub PAT
 - approved but not active: none
 - active MCP dependencies: none
 
@@ -46,14 +54,16 @@ v1_frozen
 - current stability: frozen baseline
 
 ## Next actions
-1. monitor hourly logs and source HTML drift
-2. add source-specific regression smoke checks
-3. onboard additional sources using same raw-coupled identity rule
+1. deploy Google Apps Script watchdog and script properties
+2. monitor hourly logs and source HTML drift
+3. add source-specific regression smoke checks
+4. investigate the exact failed GitHub Actions run behind repeated watchdog notifications
+5. classify registry sources and select the first 2-3 parser pilots
 
 ## Phase marker
 - current: `PHASE-3-V1-FROZEN`
 - next: `PHASE-4-EXTEND-SOURCES`
-- resume pointer: `src/build_master_crawler_wonjin/main.py`
+- resume pointer: `config/source_registry.json`, then `src/build_master_crawler_wonjin/main.py`
 
 ## Deliverable proof
 - latest artifact path(s): `src/build_master_crawler_wonjin/main.py`, `.github/workflows/hourly_notices.yml`, `.github/workflows/schedule_watchdog.yml`, `docs/V1_FREEZE.md`, `docs/SOURCE_FREEZE.md`, `STATUS.md`
