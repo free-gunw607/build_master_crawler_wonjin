@@ -34,7 +34,7 @@
       "id": "source-family-batch-02",
       "priority": "normal",
       "status": "in_progress",
-      "summary": "IH, GDCO, and CBDC adapters plus legacy/div-board parser smoke are implemented; finish live detail/schema gates and resolve GMCC access behavior."
+      "summary": "IH, GDCO, CBDC, and GMCC list adapters plus legacy/div-board parser smoke are implemented; finish live detail/schema/Telegram gates before activation."
     },
     {
       "id": "source-family-batch-03",

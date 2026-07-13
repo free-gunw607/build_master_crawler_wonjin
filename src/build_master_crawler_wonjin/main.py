@@ -33,6 +33,7 @@ SOURCE_DISPLAY = {
     "IH": "인천도시공사",
     "GDCO": "강원도개발공사",
     "CBDC": "충북개발공사",
+    "GMCC": "광주도시공사",
 }
 SOURCE_BOARD_URL = {
     "LH": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancList.do?mi=1062",
@@ -47,6 +48,7 @@ SOURCE_BOARD_URL = {
     "IH": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
     "GDCO": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
     "CBDC": "https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028",
+    "GMCC": "https://www.gmcc.co.kr/board.es?mid=a10402030000&bid=0018&cg_code=C03",
 }
 INDEX_TAB = "overall"
 RUNLOG_TAB = "scheduler_run_logs"
@@ -66,6 +68,7 @@ SOURCE_TAB_CATALOG = {
     "IH": "IH",
     "GDCO": "GDCO",
     "CBDC": "CBDC",
+    "GMCC": "GMCC",
 }
 ALLOWED_TABS = {INDEX_TAB, RUNLOG_TAB, "GUIDE", *SOURCE_TAB_CATALOG.values()}
 DEFAULT_HOURLY_LOOKBACK_DAYS = 2
@@ -824,6 +827,7 @@ def _crawl_simple_family(
     parser_kwargs: dict[str, str],
     from_date: date,
     max_pages: int = 40,
+    verify: bool = True,
 ) -> tuple[list[Notice], list[dict[str, str]]]:
     session = requests.Session()
     session.headers.update(DEFAULT_BROWSER_HEADERS)
@@ -833,7 +837,7 @@ def _crawl_simple_family(
     for page in range(1, max_pages + 1):
         page_params = dict(params)
         page_params[page_param] = str(page)
-        response = session.get(url, params=page_params, timeout=30)
+        response = session.get(url, params=page_params, timeout=30, verify=verify)
         response.raise_for_status()
         page_notices, page_rows = _parse_href_family_page(response.text, **parser_kwargs)
         if not page_notices:
@@ -989,6 +993,26 @@ def crawl_cbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     )
 
 
+def crawl_gmcc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="GMCC",
+        url="https://www.gmcc.co.kr/board.es",
+        params={"mid": "a10402030000", "bid": "0018", "cg_code": "C03"},
+        page_param="nPage",
+        parser_kwargs={
+            "source": "GMCC",
+            "link_selector": "a[href*='act=view'][href*='list_no=']",
+            "id_pattern": r"(?:^|[?&])list_no=(\d+)",
+            "raw_id_type": "list_no",
+            "detail_base": "https://www.gmcc.co.kr",
+            "area": "광주",
+        },
+        from_date=from_date,
+        max_pages=40,
+        verify=False,
+    )
+
+
 def crawl_source(source_id: str, from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     crawlers = {
         "LH": crawl_lh,
@@ -1003,6 +1027,7 @@ def crawl_source(source_id: str, from_date: date) -> tuple[list[Notice], list[di
         "IH": crawl_ih,
         "GDCO": crawl_gdco,
         "CBDC": crawl_cbdc,
+        "GMCC": crawl_gmcc,
     }
     try:
         crawler = crawlers[source_id]

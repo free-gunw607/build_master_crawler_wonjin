@@ -111,9 +111,9 @@
       "url": "https://www.gmcc.co.kr/board.es?mid=a10402030000&bid=0018&cg_code=C03",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
-      "parser_family": "unknown",
-      "notes": "Initial probe was reset by the remote server; retry with browser/session headers before implementation."
+      "status": "adapter_ready",
+      "parser_family": "server_query_board",
+      "notes": "Adapter implemented for board.es act=view&list_no=; live page requires certificate-tolerant session handling. Keep production disabled until detail smoke confirms the TLS exception is acceptable."
     },
     {
       "source_id": "UMCA",

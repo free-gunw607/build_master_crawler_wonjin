@@ -65,7 +65,7 @@ Each source gets its own registry status, fixture/smoke evidence, and activation
 - BMC/UMCA Sheets/Telegram common wiring: production-verified successfully in workflow run `29280240103`.
 - Existing production sources: remain enabled and approved.
 - DUDC/DCCO/SCTC/JNDC: post-production family dry-run passed at 2026-07-14 04:56 KST; detail and activation gates remain.
-- Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC remains access-sensitive after remote connection reset.
+- Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC adapter now handles the live board with a certificate-tolerant session and remains disabled pending detail/security review.
 - Next automatic task: complete detail/schema/Telegram evidence for batch 01, then process the legacy/access-sensitive batch.
 
 ## Handoff evidence
