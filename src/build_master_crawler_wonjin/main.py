@@ -1233,6 +1233,7 @@ def sync_records_to_gsheet(
                 "run_at_kst",
                 "run_at_utc",
             ],
+            create_if_missing=src not in SOURCE_TABS,
         )
         for src, tab in source_tabs.items()
     }
