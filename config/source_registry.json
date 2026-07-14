@@ -86,13 +86,12 @@
       "display_name": "대구도시개발공사",
       "url": "https://www.dudc.or.kr/ko/page.do?mnu_uid=101&appId=sale",
       "keywords": ["공급공고", "공급 공고"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "server_query_board",
-      "production_approved": false,
       "collection_policy": "board_scope",
-      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
+      "notes": "Adapter, normalized/dedup/detail smoke, common Sheets schema, and Telegram path are approved for controlled production verification."
     },
     {
       "source_id": "DCCO",
@@ -100,12 +99,12 @@
       "display_name": "대전도시공사",
       "url": "https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1",
       "keywords": ["공급공고", "공급 공고"],
-      "enabled": false,
-      "status": "adapter_ready",
+      "enabled": true,
+      "status": "active_v2",
       "parser_family": "server_query_board",
-      "production_approved": false,
+      "production_approved": true,
       "collection_policy": "board_scope",
-      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
+      "notes": "Adapter, normalized/dedup/detail smoke, common Sheets schema, and Telegram path are approved for controlled production verification."
     },
     {
       "source_id": "GMCC",
@@ -138,12 +137,12 @@
       "display_name": "세종도시교통공사/도시개발 게시판",
       "url": "https://www.sctc.kr/bbs/BBSS2110052040247196",
       "keywords": ["공급공고", "공급 공고"],
-      "enabled": false,
-      "status": "adapter_ready",
+      "enabled": true,
+      "status": "active_v2",
       "parser_family": "server_href_board",
-      "production_approved": false,
+      "production_approved": true,
       "collection_policy": "board_scope",
-      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
+      "notes": "Adapter, normalized/dedup/detail smoke, common Sheets schema, and Telegram path are approved for controlled production verification."
     },
     {
       "source_id": "GH_SALE_RENTAL_CANDIDATE",
@@ -211,12 +210,12 @@
       "display_name": "전남개발공사",
       "url": "https://www.jndc.co.kr/web/main/bbs/parcelout",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
-      "enabled": false,
-      "status": "adapter_ready",
+      "enabled": true,
+      "status": "active_v2",
       "parser_family": "server_href_board",
-      "production_approved": false,
+      "production_approved": true,
       "collection_policy": "board_scope",
-      "notes": "Adapter implemented and current-page dry-run passed; production gates remain."
+      "notes": "Adapter, normalized/dedup/detail smoke, common Sheets schema, and Telegram path are approved for controlled production verification."
     },
     {
       "source_id": "GBDC",
