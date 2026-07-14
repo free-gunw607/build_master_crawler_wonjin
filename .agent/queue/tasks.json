@@ -33,14 +33,14 @@
     {
       "id": "source-family-batch-02",
       "priority": "normal",
-      "status": "in_progress",
-      "summary": "CBDC and GDCO are production-activated; IH is held on CI availability/TLS and GMCC remains disabled pending DNS/access stability."
+      "status": "completed",
+      "summary": "CBDC and GDCO production gates completed; IH and GMCC have explicit availability/DNS holds documented for a later retry."
     },
     {
       "id": "source-family-batch-03",
       "priority": "normal",
-      "status": "in_progress",
-      "summary": "CNDC/GBDC/GNDC are production-activated; JBDC is held on CI TLS and GH candidate needs overlap resolution."
+      "status": "completed",
+      "summary": "CNDC/GBDC/GNDC production gates completed; JBDC has an explicit TLS hold and GH candidate has an explicit overlap hold."
     }
   ]
 }
