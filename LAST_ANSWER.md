@@ -23,6 +23,7 @@
 - BMC and UMCA promoted to `active_v2` and production-verified in workflow run `29280240103`; the run executed LH, i-SH, GH, BMC, UMCA and completed Sheets/Telegram sync successfully
 - batch-01 current-page post-production dry-run reconfirmed DUDC 38, DCCO 6, SCTC 4, JNDC 6; these remain disabled pending detail/schema/alert gates
 - all remaining registry source IDs now have adapter dispatch coverage or an explicit merged/disabled decision; non-approved sources remain blocked from production and Sheets creation
+- latest production regression run `29302647947` passed on commit `7d82e8d`; enabled sources remained LH, i-SH, GH, BMC, UMCA
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work

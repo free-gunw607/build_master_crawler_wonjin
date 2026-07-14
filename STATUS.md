@@ -49,6 +49,7 @@ v1_frozen
 - post-production batch-01 dry-run reconfirmed DUDC 38, DCCO 6, SCTC 4, JNDC 6 at 2026-07-14 04:56 KST
 - registry-wide adapter coverage completed for IH, GDCO, CBDC, GMCC, CNDC, JBDC, GBDC, GNDC, and GH sale/rental candidate; all remain disabled until source-specific production gates pass
 - explicit production activation guard now rejects registry entries without boolean `production_approved`
+- latest production regression `29302647947` on commit `7d82e8d` passed with enabled set LH/i-SH/GH/BMC/UMCA
 
 ## Current blockers
 - no production runtime blocker; unverified sources remain intentionally disabled, with GMCC subject to transient DNS/remote-access behavior and GH candidate subject to overlap policy

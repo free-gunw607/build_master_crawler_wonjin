@@ -63,7 +63,7 @@ Each source gets its own registry status, fixture/smoke evidence, and activation
 - Common registry-driven selection: implemented locally.
 - BMC/UMCA adapters: implemented and dry-run validated.
 - DUDC/DCCO/SCTC/JNDC adapters: implemented and current-page dry-run validated; production gates still pending.
-- BMC/UMCA Sheets/Telegram common wiring: production-verified successfully in workflow run `29280240103`.
+- BMC/UMCA Sheets/Telegram common wiring: production-verified successfully in workflow runs `29280240103` and regression run `29302647947` (latest commit `7d82e8d`).
 - Existing production sources: remain enabled and approved.
 - DUDC/DCCO/SCTC/JNDC: post-production family dry-run passed at 2026-07-14 04:56 KST; detail and activation gates remain.
 - Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC adapter handles the live board with a certificate-tolerant session and remains disabled pending detail/security review.

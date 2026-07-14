@@ -51,6 +51,8 @@
 
 두 게시판은 각각 목적이 명확한 전용 분양공고판이므로, 현재 정책은 키워드 강제 필터보다 게시판 범위 전체 수집이다. 그 전까지는 `--include-pilots`가 `--dry-run` 없이 실행되지 않는다.
 
+2026-07-14 최신 production regression `29302647947`에서도 enabled set `LH`, `i-SH`, `GH`, `BMC`, `UMCA`가 정상 실행됐고, Sheets/Telegram sync 예외가 없었다.
+
 ## 첫 source family dry-run 결과
 
 2026-07-14 기준 실제 목록에서 다음 adapter가 동작했다.
