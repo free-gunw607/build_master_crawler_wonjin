@@ -66,6 +66,7 @@
 
 이 중 `DUDC`, `DCCO`, `SCTC`, `JNDC`는 adapter·detail·schema·Telegram gate와 controlled production workflow `29302911754`를 통과해 `active_v2`로 승격했다. `CBDC`, `CNDC`도 같은 gate와 workflow `29303970882`를 통과해 승격했다. IH/JBDC는 live smoke는 통과했지만 CI 원격 TLS/availability 변동으로 hold 중이며, GMCC/GDCO/GBDC/GNDC는 scope/access gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
 `GBDC`, `GNDC`도 supply-scope filter, detail/schema/Telegram gate와 workflow `29355931391`을 통과해 `active_v2`로 승격했다. IH/JBDC는 live smoke는 통과했지만 CI 원격 TLS/availability 변동으로 hold 중이며, GMCC/GDCO는 scope/access gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
+`GDCO`도 supply-title filter, detail/schema/Telegram gate와 workflow `29356087399`를 통과해 `active_v2`로 승격했다. 현재 registry의 14개 source가 production enabled이고, IH/JBDC/GMCC는 remote availability hold, GH candidate는 overlap gate, 서울 후보는 기존 i-SH 병합 상태다.
 
 이 registry는 신규 소스를 production에 자동 연결하지 않는다. 활성화는 parser와 운영 검증이 끝난 뒤 별도 변경으로 수행한다.
 

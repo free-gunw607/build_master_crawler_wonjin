@@ -27,6 +27,7 @@
 - DUDC/DCCO/SCTC/JNDC passed controlled activation run `29302911754` and now use the same production Sheets/Telegram contract
 - CBDC/CNDC passed controlled activation run `29303970882`; IH/JBDC were held back after CI remote TLS/availability failures to protect the hourly job
 - GBDC/GNDC passed filtered production activation run `29355931391`; only IH/JBDC/GMCC/GDCO/GH candidate remain held or disabled
+- GDCO passed filtered production activation run `29356087399`; 14 registry sources are now production-enabled, with only remote/overlap-gated candidates held
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work

@@ -34,7 +34,7 @@
       "id": "source-family-batch-02",
       "priority": "normal",
       "status": "in_progress",
-      "summary": "CBDC is production-activated; IH is held on CI availability/TLS, while GDCO and GMCC remain disabled pending scope/access gates."
+      "summary": "CBDC and GDCO are production-activated; IH is held on CI availability/TLS and GMCC remains disabled pending DNS/access stability."
     },
     {
       "id": "source-family-batch-03",
