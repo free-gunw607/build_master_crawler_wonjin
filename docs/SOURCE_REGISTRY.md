@@ -64,7 +64,7 @@
 - `SCTC`: 4건
 - `JNDC`: 6건
 
-이 중 `DUDC`, `DCCO`, `SCTC`, `JNDC`는 adapter·detail·schema·Telegram gate와 controlled production workflow `29302911754`를 통과해 `active_v2`로 승격했다. 나머지 신규 source는 production gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
+이 중 `DUDC`, `DCCO`, `SCTC`, `JNDC`는 adapter·detail·schema·Telegram gate와 controlled production workflow `29302911754`를 통과해 `active_v2`로 승격했다. `CBDC`, `CNDC`도 같은 gate와 workflow `29303970882`를 통과해 승격했다. IH/JBDC는 live smoke는 통과했지만 CI 원격 TLS/availability 변동으로 hold 중이며, GMCC/GDCO/GBDC/GNDC는 scope/access gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
 
 이 registry는 신규 소스를 production에 자동 연결하지 않는다. 활성화는 parser와 운영 검증이 끝난 뒤 별도 변경으로 수행한다.
 

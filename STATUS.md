@@ -51,9 +51,10 @@ v1_frozen
 - explicit production activation guard now rejects registry entries without boolean `production_approved`
 - latest production regression `29302647947` on commit `7d82e8d` passed with enabled set LH/i-SH/GH/BMC/UMCA
 - DUDC/DCCO/SCTC/JNDC promoted to `active_v2`; controlled activation workflow `29302911754` passed with enabled set LH/i-SH/GH/BMC/DUDC/DCCO/UMCA/SCTC/JNDC
+- CBDC/CNDC promoted to `active_v2`; controlled activation workflow `29303970882` passed after IH/JBDC were held for remote TLS/availability instability
 
 ## Current blockers
-- no production runtime blocker; remaining unverified sources remain intentionally disabled, with GMCC subject to transient DNS/remote-access behavior and GH candidate subject to overlap policy
+- no production runtime blocker; remaining unverified sources remain intentionally disabled, with IH/JBDC subject to remote TLS/availability, GMCC subject to DNS, GDCO/GBDC/GNDC subject to scope filters, and GH candidate subject to overlap policy
 
 ## Capability and MCP status
 - required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API

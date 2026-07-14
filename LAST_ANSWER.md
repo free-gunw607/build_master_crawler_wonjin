@@ -25,6 +25,7 @@
 - all remaining registry source IDs now have adapter dispatch coverage or an explicit merged/disabled decision; non-approved sources remain blocked from production and Sheets creation
 - latest production regression run `29302647947` passed on commit `7d82e8d`; enabled sources remained LH, i-SH, GH, BMC, UMCA
 - DUDC/DCCO/SCTC/JNDC passed controlled activation run `29302911754` and now use the same production Sheets/Telegram contract
+- CBDC/CNDC passed controlled activation run `29303970882`; IH/JBDC were held back after CI remote TLS/availability failures to protect the hourly job
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work

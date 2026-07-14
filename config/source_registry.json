@@ -178,7 +178,7 @@
       "status": "active_v2",
       "production_approved": true,
       "parser_family": "legacy_zboard",
-      "notes": "Adapter implemented for read.do?pd_pkid=; live list response is reachable. Production gates remain disabled."
+      "notes": "Adapter, detail/schema/Telegram gates, and controlled production workflow 29303970882 passed."
     },
     {
       "source_id": "CNDC",
@@ -190,7 +190,7 @@
       "status": "active_v2",
       "production_approved": true,
       "parser_family": "server_onclick_board",
-      "notes": "Whitespace-sensitive keyword filter."
+      "notes": "Adapter, detail/schema/Telegram gates, and controlled production workflow 29303970882 passed."
     },
     {
       "source_id": "JBDC",

@@ -34,13 +34,13 @@
       "id": "source-family-batch-02",
       "priority": "normal",
       "status": "in_progress",
-      "summary": "IH, GDCO, CBDC, and GMCC list adapters plus legacy/div-board parser smoke are implemented; finish live detail/schema/Telegram gates before activation."
+      "summary": "CBDC is production-activated; IH is held on CI availability/TLS, while GDCO and GMCC remain disabled pending scope/access gates."
     },
     {
       "id": "source-family-batch-03",
       "priority": "normal",
       "status": "in_progress",
-      "summary": "CNDC/JBDC onclick, GBDC/GNDC JSON, and GH sale/rental candidate adapters are implemented and live-smoked; finish detail/schema/overlap gates before activation."
+      "summary": "CNDC is production-activated; JBDC is held on CI TLS, GBDC/GNDC need supply-scope filters, and GH candidate needs overlap resolution."
     }
   ]
 }
