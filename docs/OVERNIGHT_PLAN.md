@@ -26,6 +26,7 @@ No source is enabled merely because its list page can be crawled.
 
 - Load source selection from `config/source_registry.json`.
 - Use one `Notice` contract and one Sheets sync path.
+- Require an explicit boolean `production_approved` value for every registry entry; absence is invalid.
 - Dynamically create source tabs only for active approved sources.
 - Dynamically include source counters in `scheduler_run_logs`.
 - Dynamically include source labels and board links in Telegram rendering.
@@ -65,7 +66,9 @@ Each source gets its own registry status, fixture/smoke evidence, and activation
 - BMC/UMCA Sheets/Telegram common wiring: production-verified successfully in workflow run `29280240103`.
 - Existing production sources: remain enabled and approved.
 - DUDC/DCCO/SCTC/JNDC: post-production family dry-run passed at 2026-07-14 04:56 KST; detail and activation gates remain.
-- Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC adapter now handles the live board with a certificate-tolerant session and remains disabled pending detail/security review.
+- Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC adapter handles the live board with a certificate-tolerant session and remains disabled pending detail/security review.
+- Batch-03 progress: CNDC/JBDC onclick adapters and GBDC/GNDC JSON-board adapters are implemented and live-smoked; GH sale/rental candidate adapter is implemented, with 4 exact title overlaps found against active GH in the sampled window. All remain disabled pending detail/schema/overlap gates.
+- Common gate evidence: implemented sources passed normalized-field and source-local dedup checks; sample detail requests returned HTTP 200 for the live-smoked sources. CBDC has no records since 2026-01-01 but returned 30 records in a 2025 range. GMCC remains subject to transient DNS/remote-access checks.
 - Next automatic task: complete detail/schema/Telegram evidence for batch 01, then process the legacy/access-sensitive batch.
 
 ## Handoff evidence

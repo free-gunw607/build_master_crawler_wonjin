@@ -47,9 +47,11 @@ v1_frozen
 - promoted BMC and UMCA to `active_v2` for controlled production verification; later-family sources remain disabled
 - completed controlled BMC/UMCA production workflow `29280240103` successfully; enabled source set was LH, i-SH, GH, BMC, UMCA
 - post-production batch-01 dry-run reconfirmed DUDC 38, DCCO 6, SCTC 4, JNDC 6 at 2026-07-14 04:56 KST
+- registry-wide adapter coverage completed for IH, GDCO, CBDC, GMCC, CNDC, JBDC, GBDC, GNDC, and GH sale/rental candidate; all remain disabled until source-specific production gates pass
+- explicit production activation guard now rejects registry entries without boolean `production_approved`
 
 ## Current blockers
-- no runtime blocker; batch-01 detail/schema/Telegram gates remain before activation
+- no production runtime blocker; unverified sources remain intentionally disabled, with GMCC subject to transient DNS/remote-access behavior and GH candidate subject to overlap policy
 
 ## Capability and MCP status
 - required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API

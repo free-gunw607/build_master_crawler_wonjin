@@ -129,6 +129,28 @@ class PilotParserTests(unittest.TestCase):
         self.assertEqual(notices[0].raw_id_value, "172")
         self.assertEqual(notices[0].posted_at, "2026-07-10")
 
+    def test_onclick_family_parser_builds_detail_url(self):
+        html = """
+        <table><tbody><tr>
+          <td>1</td><td><a href='#none' onclick="goView('26064430')">충남 공급공고</a></td>
+          <td>2026-07-09</td>
+        </tr></tbody></table>
+        """
+        notices, _ = _parse_href_family_page(
+            html,
+            source="CNDC",
+            link_selector="a[onclick*='goView']",
+            id_pattern=r"goView\(['\"](\d+)",
+            raw_id_type="pstSn",
+            detail_base="https://www.cndc.kr",
+            detail_url_template="https://www.cndc.kr/bbs/view.do?key=2404080038&pstSn={raw_id}",
+            link_attribute="onclick",
+            area="충남",
+        )
+        self.assertEqual(len(notices), 1)
+        self.assertEqual(notices[0].raw_id_value, "26064430")
+        self.assertIn("pstSn=26064430", notices[0].detail_url)
+
 
 if __name__ == "__main__":
     unittest.main()

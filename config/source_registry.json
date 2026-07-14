@@ -50,6 +50,7 @@
       "keywords": ["공고"],
       "enabled": false,
       "status": "merged_into_existing",
+      "production_approved": false,
       "parser_family": "ish_custom_variant",
       "merged_into": "i-SH",
       "notes": "Review confirmed 59/59 raw IDs overlap with active i-SH. Keep the URL as an alternate endpoint reference; do not create a separate source identity."
@@ -62,6 +63,7 @@
       "keywords": ["공고"],
       "enabled": false,
       "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_board_href",
       "notes": "Adapter implemented for bbsMsgDetail.do?msg_seq=; live list response is reachable. Production gates remain disabled."
     },
@@ -85,7 +87,8 @@
       "url": "https://www.dudc.or.kr/ko/page.do?mnu_uid=101&appId=sale",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_query_board",
       "production_approved": false,
       "collection_policy": "board_scope",
@@ -98,7 +101,7 @@
       "url": "https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
       "parser_family": "server_query_board",
       "production_approved": false,
       "collection_policy": "board_scope",
@@ -112,6 +115,7 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_query_board",
       "notes": "Adapter implemented for board.es act=view&list_no=; live page requires certificate-tolerant session handling. Keep production disabled until detail smoke confirms the TLS exception is acceptable."
     },
@@ -135,7 +139,7 @@
       "url": "https://www.sctc.kr/bbs/BBSS2110052040247196",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
       "parser_family": "server_href_board",
       "production_approved": false,
       "collection_policy": "board_scope",
@@ -148,9 +152,10 @@
       "url": "https://gh.or.kr/gh/announcement-of-salerental001.do?srCategoryId=13",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "candidate",
+      "status": "candidate_adapter_ready",
+      "production_approved": false,
       "parser_family": "gh_server_query_board",
-      "notes": "Verify overlap with the active GH land system before assigning a separate identity."
+      "notes": "Adapter implemented for articleNo; sampled 2026 pages found 4 exact title overlaps with active GH. Keep disabled until overlap policy is resolved before any separate identity is enabled."
     },
     {
       "source_id": "GDCO",
@@ -160,6 +165,7 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "legacy_php_board",
       "notes": "Adapter implemented for notice_view.php?intSeq=; live list response is reachable. Production gates remain disabled."
     },
@@ -171,6 +177,7 @@
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
       "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "legacy_zboard",
       "notes": "Adapter implemented for read.do?pd_pkid=; live list response is reachable. Production gates remain disabled."
     },
@@ -181,7 +188,8 @@
       "url": "https://www.cndc.kr/bbs/list.do?key=2404080038",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_onclick_board",
       "notes": "Whitespace-sensitive keyword filter."
     },
@@ -192,7 +200,8 @@
       "url": "https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_onclick_board",
       "notes": "Multiple keyword conditions require explicit inclusion policy."
     },
@@ -203,7 +212,7 @@
       "url": "https://www.jndc.co.kr/web/main/bbs/parcelout",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
       "parser_family": "server_href_board",
       "production_approved": false,
       "collection_policy": "board_scope",
@@ -216,7 +225,8 @@
       "url": "https://www.gbdc.co.kr/boardlist.do?seqId=0000003631",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "unknown",
       "notes": "Multiple keyword conditions require explicit inclusion policy."
     },
@@ -227,7 +237,8 @@
       "url": "https://www.gndc.co.kr/boardlist.do?seqId=0000006190",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
       "enabled": false,
-      "status": "planned",
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "unknown",
       "notes": "Multiple keyword conditions require explicit inclusion policy."
     }

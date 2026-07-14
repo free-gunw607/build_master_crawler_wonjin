@@ -39,8 +39,8 @@
     {
       "id": "source-family-batch-03",
       "priority": "normal",
-      "status": "queued",
-      "summary": "Implement and validate CNDC, JBDC, GBDC, and GNDC; resolve GH sale/rental overlap separately."
+      "status": "in_progress",
+      "summary": "CNDC/JBDC onclick, GBDC/GNDC JSON, and GH sale/rental candidate adapters are implemented and live-smoked; finish detail/schema/overlap gates before activation."
     }
   ]
 }

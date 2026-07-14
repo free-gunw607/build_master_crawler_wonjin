@@ -34,6 +34,11 @@ SOURCE_DISPLAY = {
     "GDCO": "강원도개발공사",
     "CBDC": "충북개발공사",
     "GMCC": "광주도시공사",
+    "CNDC": "충남개발공사",
+    "JBDC": "전북개발공사",
+    "GBDC": "경북개발공사",
+    "GNDC": "경남개발공사",
+    "GH_SALE_RENTAL_CANDIDATE": "GH 매매·임대 공고 후보",
 }
 SOURCE_BOARD_URL = {
     "LH": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancList.do?mi=1062",
@@ -49,6 +54,11 @@ SOURCE_BOARD_URL = {
     "GDCO": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
     "CBDC": "https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028",
     "GMCC": "https://www.gmcc.co.kr/board.es?mid=a10402030000&bid=0018&cg_code=C03",
+    "CNDC": "https://www.cndc.kr/bbs/list.do?key=2404080038",
+    "JBDC": "https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
+    "GBDC": "https://www.gbdc.co.kr/boardlist.do?seqId=0000003631",
+    "GNDC": "https://www.gndc.co.kr/boardlist.do?seqId=0000006190",
+    "GH_SALE_RENTAL_CANDIDATE": "https://gh.or.kr/gh/announcement-of-salerental001.do?srCategoryId=13",
 }
 INDEX_TAB = "overall"
 RUNLOG_TAB = "scheduler_run_logs"
@@ -69,11 +79,21 @@ SOURCE_TAB_CATALOG = {
     "GDCO": "GDCO",
     "CBDC": "CBDC",
     "GMCC": "GMCC",
+    "CNDC": "CNDC",
+    "JBDC": "JBDC",
+    "GBDC": "GBDC",
+    "GNDC": "GNDC",
+    "GH_SALE_RENTAL_CANDIDATE": "GH_SALE_RENTAL_CANDIDATE",
 }
 ALLOWED_TABS = {INDEX_TAB, RUNLOG_TAB, "GUIDE", *SOURCE_TAB_CATALOG.values()}
 DEFAULT_HOURLY_LOOKBACK_DAYS = 2
 DEFAULT_BOOTSTRAP_DAYS = 365
 PILOT_SOURCES = ("BMC", "UMCA", "DUDC", "DCCO", "SCTC", "JNDC")
+REGISTERED_ADAPTER_SOURCES = (
+    "LH", "i-SH", "GH", "BMC", "UMCA", "DUDC", "DCCO", "SCTC", "JNDC",
+    "IH", "GDCO", "CBDC", "GMCC", "CNDC", "JBDC", "GBDC", "GNDC",
+    "GH_SALE_RENTAL_CANDIDATE",
+)
 DEFAULT_BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
     "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
@@ -135,6 +155,8 @@ def load_source_registry() -> list[dict[str, object]]:
     for source in sources:
         if not isinstance(source, dict) or not source.get("source_id"):
             raise RuntimeError("Every source registry entry needs a source_id")
+        if not isinstance(source.get("production_approved"), bool):
+            raise RuntimeError(f"Source {source.get('source_id')} needs explicit production_approved=true/false")
         if source.get("enabled") is True and source.get("production_approved", True) is not True:
             raise RuntimeError(
                 f"Source {source['source_id']} is enabled without production_approved=true"
@@ -736,6 +758,8 @@ def _parse_href_family_page(
     raw_id_type: str,
     detail_base: str,
     area: str,
+    link_attribute: str = "href",
+    detail_url_template: str = "",
 ) -> tuple[list[Notice], list[dict[str, str]]]:
     soup = BeautifulSoup(html, "lxml")
     notices: list[Notice] = []
@@ -744,14 +768,14 @@ def _parse_href_family_page(
         a = tr.select_one(link_selector)
         if a is None:
             continue
-        link = a.get("href", "")
+        link = a.get(link_attribute, "")
         match = re.search(id_pattern, link)
         raw_id = match.group(1).strip() if match else ""
         if not raw_id:
             continue
         title = _clean_text(a.get_text(" ", strip=True))
         posted = _date_from_row(tr)
-        detail_url = urljoin(detail_base, link)
+        detail_url = detail_url_template.format(raw_id=raw_id) if detail_url_template else urljoin(detail_base, link)
         tds = tr.find_all("td")
         views = _clean_text(tds[-1].get_text(" ", strip=True)) if tds else ""
         notices.append(
@@ -786,7 +810,7 @@ def _parse_href_family_page(
         # Keep the same Notice contract while using the nearest compact container.
         seen_ids: set[str] = set()
         for a in soup.select(link_selector):
-            link = a.get("href", "")
+            link = a.get(link_attribute, "")
             match = re.search(id_pattern, link)
             raw_id = match.group(1).strip() if match else ""
             if not raw_id or raw_id in seen_ids:
@@ -795,7 +819,7 @@ def _parse_href_family_page(
             container = a.find_parent(["li", "div"]) or a.parent
             title = _clean_text(a.get_text(" ", strip=True))
             posted = _date_from_container(container)
-            detail_url = urljoin(detail_base, link)
+            detail_url = detail_url_template.format(raw_id=raw_id) if detail_url_template else urljoin(detail_base, link)
             notices.append(
                 Notice(
                     source=source,
@@ -837,7 +861,18 @@ def _crawl_simple_family(
     for page in range(1, max_pages + 1):
         page_params = dict(params)
         page_params[page_param] = str(page)
-        response = session.get(url, params=page_params, timeout=30, verify=verify)
+        response = None
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                response = session.get(url, params=page_params, timeout=30, verify=verify)
+                break
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < 2:
+                    time.sleep(1)
+        if response is None:
+            raise RuntimeError(f"Source request failed after retries: {url}") from last_error
         response.raise_for_status()
         page_notices, page_rows = _parse_href_family_page(response.text, **parser_kwargs)
         if not page_notices:
@@ -1013,6 +1048,127 @@ def crawl_gmcc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     )
 
 
+def crawl_cndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="CNDC",
+        url="https://www.cndc.kr/bbs/list.do",
+        params={"key": "2404080038"},
+        page_param="pageIndex",
+        parser_kwargs={
+            "source": "CNDC",
+            "link_selector": "a[onclick*='goView']",
+            "id_pattern": r"goView\(['\"](\d+)",
+            "raw_id_type": "pstSn",
+            "detail_base": "https://www.cndc.kr",
+            "detail_url_template": "https://www.cndc.kr/bbs/view.do?key=2404080038&pstSn={raw_id}",
+            "link_attribute": "onclick",
+            "area": "충남",
+        },
+        from_date=from_date,
+        max_pages=30,
+    )
+
+
+def crawl_jbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="JBDC",
+        url="https://www.jbdc.co.kr/notice/notice.do",
+        params={"bbsgubun": "2", "bbsId": "BBSMSTR_000000000011", "mode": "list"},
+        page_param="pageIndex",
+        parser_kwargs={
+            "source": "JBDC",
+            "link_selector": "a[href*='setView']",
+            "id_pattern": r"setView\(['\"](\d+)",
+            "raw_id_type": "nttId",
+            "detail_base": "https://www.jbdc.co.kr",
+            "detail_url_template": "https://www.jbdc.co.kr/notice/notice.do?bbsId=BBSMSTR_000000000011&mode=view&nttId={raw_id}&pageIndex=1",
+            "link_attribute": "href",
+            "area": "전북",
+        },
+        from_date=from_date,
+        max_pages=30,
+    )
+
+
+def _crawl_json_family(
+    *, source: str, host: str, bbs_id: str, area: str, from_date: date, max_pages: int = 40
+) -> tuple[list[Notice], list[dict[str, str]]]:
+    session = requests.Session()
+    session.headers.update({**DEFAULT_BROWSER_HEADERS, "Accept": "application/json, text/plain, */*", "X-Requested-With": "XMLHttpRequest"})
+    notices: list[Notice] = []
+    rows: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for page in range(1, max_pages + 1):
+        response = None
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                response = session.get(
+                    f"https://www.{host}.co.kr/getBbsArticleList.do",
+                    params={"BBS_ID": bbs_id, "BBS_TYPE": "L", "CURRENT_PAGE": str(page), "SEARCH_CONTITION": "", "SEARCH_KEYWORD": ""},
+                    timeout=30,
+                    verify=False,
+                )
+                break
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < 2:
+                    time.sleep(1)
+        if response is None:
+            raise RuntimeError(f"JSON source request failed after retries: {host}") from last_error
+        response.raise_for_status()
+        payload = response.json()
+        items = payload.get("resultList", [])
+        if not items:
+            break
+        stop = False
+        for item in items:
+            raw_id = str(item.get("IPDS_IDX", "")).strip()
+            if not raw_id or (source, raw_id) in seen:
+                continue
+            posted = str(item.get("CPDS_WDATE", item.get("RGST_DTM", "")))[:10].replace("-", ".")
+            posted_date = _parse_dot_date(posted)
+            if posted_date and posted_date < from_date:
+                stop = True
+                continue
+            title = _clean_text(str(item.get("CPDS_SUBJECT", "")))
+            detail_url = f"https://www.{host}.co.kr/boardview/boardview.do?seqId={'0000003631' if source == 'GBDC' else '0000006190'}&BBS_ID={bbs_id}&BBS_TYPE=L&IPDS_IDX={raw_id}"
+            seen.add((source, raw_id))
+            notices.append(Notice(source, raw_id, "IPDS_IDX", raw_id, _id_sort_num(source, raw_id), title, posted, "", "", detail_url, "Y" if item.get("ATTACH_CNT") else "", area, "토지", str(item.get("IPDS_COUNTS", ""))))
+            rows.append({"번호": str(item.get("BNUM", "")), "제목": title, "작성일": posted, "IPDS_IDX": raw_id, "detail_url": detail_url})
+        if stop:
+            break
+    return notices, rows
+
+
+def crawl_gbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_json_family(source="GBDC", host="gbdc", bbs_id="4c9b3e75-2935-4bcd-96be-62fb07903949", area="경북", from_date=from_date)
+
+
+def crawl_gndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_json_family(source="GNDC", host="gndc", bbs_id="B491A490314446318099F9D828047900", area="경남", from_date=from_date)
+
+
+def crawl_gh_sale_rental_candidate(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    return _crawl_simple_family(
+        source="GH_SALE_RENTAL_CANDIDATE",
+        url="https://gh.or.kr/gh/announcement-of-salerental001.do",
+        params={"srCategoryId": "13"},
+        page_param="article.offset",
+        parser_kwargs={
+            "source": "GH_SALE_RENTAL_CANDIDATE",
+            "link_selector": "a[href*='articleNo=']",
+            "id_pattern": r"(?:^|[?&])articleNo=(\d+)",
+            "raw_id_type": "articleNo",
+            "detail_base": "https://gh.or.kr",
+            "detail_url_template": "https://gh.or.kr/gh/announcement-of-salerental001.do?mode=view&articleNo={raw_id}&srCategoryId=13",
+            "area": "경기",
+        },
+        from_date=from_date,
+        max_pages=30,
+    )
+
+
 def crawl_source(source_id: str, from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     crawlers = {
         "LH": crawl_lh,
@@ -1028,6 +1184,11 @@ def crawl_source(source_id: str, from_date: date) -> tuple[list[Notice], list[di
         "GDCO": crawl_gdco,
         "CBDC": crawl_cbdc,
         "GMCC": crawl_gmcc,
+        "CNDC": crawl_cndc,
+        "JBDC": crawl_jbdc,
+        "GBDC": crawl_gbdc,
+        "GNDC": crawl_gndc,
+        "GH_SALE_RENTAL_CANDIDATE": crawl_gh_sale_rental_candidate,
     }
     try:
         crawler = crawlers[source_id]
@@ -1594,7 +1755,13 @@ def send_telegram(records: list[Notice], dry_run: bool, run_meta: dict[str, str]
         _telegram_post(token, chat_id, detail.strip())
 
 
-def run(from_date: date, dry_run: bool, output_xlsx: str, include_pilots: bool = False) -> dict:
+def run(
+    from_date: date,
+    dry_run: bool,
+    output_xlsx: str,
+    include_pilots: bool = False,
+    include_registered: bool = False,
+) -> dict:
     registry = load_source_registry()
     enabled_sources = [
         str(item["source_id"])
@@ -1605,6 +1772,10 @@ def run(from_date: date, dry_run: bool, output_xlsx: str, include_pilots: bool =
         if not dry_run:
             raise RuntimeError("Pilot sources are dry-run only until their Sheets tabs and alert contract are approved")
         enabled_sources.extend(source for source in PILOT_SOURCES if source not in enabled_sources)
+    if include_registered:
+        if not dry_run:
+            raise RuntimeError("All-registered smoke is dry-run only")
+        enabled_sources.extend(source for source in REGISTERED_ADAPTER_SOURCES if source not in enabled_sources)
 
     source_records: dict[str, list[Notice]] = {}
     source_rows: dict[str, list[dict[str, str]]] = {}
@@ -1656,6 +1827,7 @@ def run(from_date: date, dry_run: bool, output_xlsx: str, include_pilots: bool =
         "output_xlsx": out_path,
         "dry_run": dry_run,
         "include_pilots": include_pilots,
+        "include_registered": include_registered,
         "enabled_sources": enabled_sources,
     }
 
@@ -1676,6 +1848,11 @@ def main() -> None:
         "--include-pilots",
         action="store_true",
         help="crawl the selected pilot sources; requires --dry-run until Sheets tabs are approved",
+    )
+    parser.add_argument(
+        "--include-registered",
+        action="store_true",
+        help="crawl every registry source with an implemented adapter; requires --dry-run",
     )
     parser.add_argument(
         "--seed-xlsx",
@@ -1715,6 +1892,7 @@ def main() -> None:
         dry_run=args.dry_run,
         output_xlsx=args.output_xlsx,
         include_pilots=args.include_pilots,
+        include_registered=args.include_registered,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

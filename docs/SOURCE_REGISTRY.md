@@ -9,6 +9,7 @@
 - 신규 소스는 기본적으로 `enabled: false`다.
 - 서울 i-SH 후보와 경기 GH 후보는 기존 소스와 중복 여부를 먼저 판정한다.
 - `source_id`는 Sheets dedup의 `source` 값이 되므로, 운영 투입 후 임의로 변경하지 않는다.
+- 모든 entry는 `production_approved: true|false`를 명시해야 하며, 값이 없으면 runtime registry validation이 실패한다.
 - 키워드는 필터 힌트이며, 실제 포함 조건은 소스별 parser smoke에서 확정한다.
 
 ## 추가 순서
@@ -64,3 +65,14 @@
 이 소스들은 adapter·current-page dry-run 단계까지 완료했지만, detail/schema/Telegram production gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
 
 이 registry는 신규 소스를 production에 자동 연결하지 않는다. 활성화는 parser와 운영 검증이 끝난 뒤 별도 변경으로 수행한다.
+
+## 2026-07-14 adapter coverage
+
+registry에 남아 있던 소스도 모두 adapter dispatch 경로에 등록했다.
+
+- `IH`, `GDCO`, `CBDC`, `GMCC`: legacy/server-board adapter
+- `CNDC`, `JBDC`: onclick/JavaScript detail identifier adapter
+- `GBDC`, `GNDC`: JSON board API adapter
+- `GH_SALE_RENTAL_CANDIDATE`: `articleNo` adapter; active GH와 제목 중복 정책을 별도 gate로 유지
+
+현재 live smoke 증거는 CNDC 4건, JBDC 9건, GBDC 14건, GNDC 29건, GH 후보 39건이며, 이 수치는 production 승인이나 Sheets tab 생성을 의미하지 않는다.
