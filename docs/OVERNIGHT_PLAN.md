@@ -65,11 +65,11 @@ Each source gets its own registry status, fixture/smoke evidence, and activation
 - DUDC/DCCO/SCTC/JNDC adapters: implemented and current-page dry-run validated; production gates still pending.
 - BMC/UMCA Sheets/Telegram common wiring: production-verified successfully in workflow runs `29280240103` and regression run `29302647947` (latest commit `7d82e8d`).
 - Existing production sources: remain enabled and approved.
-- DUDC/DCCO/SCTC/JNDC: post-production family dry-run passed at 2026-07-14 04:56 KST; detail and activation gates remain.
+- DUDC/DCCO/SCTC/JNDC: dry-run, normalized/dedup/detail/schema/Telegram gates passed and controlled production activation succeeded in workflow `29302911754`.
 - Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC adapter handles the live board with a certificate-tolerant session and remains disabled pending detail/security review.
 - Batch-03 progress: CNDC/JBDC onclick adapters and GBDC/GNDC JSON-board adapters are implemented and live-smoked; GH sale/rental candidate adapter is implemented, with 4 exact title overlaps found against active GH in the sampled window. All remain disabled pending detail/schema/overlap gates.
 - Common gate evidence: implemented sources passed normalized-field and source-local dedup checks; sample detail requests returned HTTP 200 for the live-smoked sources. CBDC has no records since 2026-01-01 but returned 30 records in a 2025 range. GMCC remains subject to transient DNS/remote-access checks.
-- Next automatic task: run the common all-registered dry-run/detail gate, then promote only sources with complete evidence; transiently inaccessible sources remain disabled.
+- Next automatic task: complete batch-02/03 promotion gates; transiently inaccessible or overlap-ambiguous sources remain disabled.
 
 ## Handoff evidence
 

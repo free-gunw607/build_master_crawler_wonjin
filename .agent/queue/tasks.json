@@ -27,8 +27,8 @@
     {
       "id": "source-family-batch-01",
       "priority": "normal",
-      "status": "in_progress",
-      "summary": "Complete detail/schema/Telegram gates for DUDC, DCCO, SCTC, and JNDC; current-page dry-run is already passing and all remain disabled."
+      "status": "completed",
+      "summary": "Completed detail/schema/Telegram gates and controlled production activation for DUDC, DCCO, SCTC, and JNDC in workflow 29302911754."
     },
     {
       "id": "source-family-batch-02",
