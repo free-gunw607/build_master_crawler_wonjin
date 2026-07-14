@@ -198,9 +198,9 @@
       "display_name": "전북개발공사",
       "url": "https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
-      "enabled": true,
-      "status": "active_v2",
-      "production_approved": true,
+      "enabled": false,
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_onclick_board",
       "notes": "Multiple keyword conditions require explicit inclusion policy."
     },
