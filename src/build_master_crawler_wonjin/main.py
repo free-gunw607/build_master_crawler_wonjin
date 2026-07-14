@@ -990,7 +990,7 @@ def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
 
 
 def crawl_gdco(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
-    return _crawl_simple_family(
+    notices, rows = _crawl_simple_family(
         source="GDCO",
         url="https://www.gdco.co.kr/customer/notice_list.php",
         params={"strBoardID": "NOTI", "pageSize": "10"},
@@ -1006,6 +1006,12 @@ def crawl_gdco(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
         from_date=from_date,
         max_pages=20,
     )
+    allowed = [(n, row) for n, row in zip(notices, rows) if _is_supply_title(n.title)]
+    return [n for n, _ in allowed], [row for _, row in allowed]
+
+
+def _is_supply_title(title: str) -> bool:
+    return any(token in title for token in ("공급", "분양", "택지", "용지", "수의계약"))
 
 
 def crawl_cbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
@@ -1131,6 +1137,9 @@ def _crawl_json_family(
                 stop = True
                 continue
             title = _clean_text(str(item.get("CPDS_SUBJECT", "")))
+            category = _clean_text(str(item.get("COLM1_VAL", "")))
+            if category not in ("분양", "분양공고") or not _is_supply_title(title):
+                continue
             detail_url = f"https://www.{host}.co.kr/boardview/boardview.do?seqId={'0000003631' if source == 'GBDC' else '0000006190'}&BBS_ID={bbs_id}&BBS_TYPE=L&IPDS_IDX={raw_id}"
             seen.add((source, raw_id))
             notices.append(Notice(source, raw_id, "IPDS_IDX", raw_id, _id_sort_num(source, raw_id), title, posted, "", "", detail_url, "Y" if item.get("ATTACH_CNT") else "", area, "토지", str(item.get("IPDS_COUNTS", ""))))

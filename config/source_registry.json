@@ -223,11 +223,11 @@
       "display_name": "경북개발공사",
       "url": "https://www.gbdc.co.kr/boardlist.do?seqId=0000003631",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "unknown",
-      "notes": "Multiple keyword conditions require explicit inclusion policy."
+      "notes": "Supply-scope category/title filter passed; adapter, detail/schema/Telegram gates approved for controlled production verification."
     },
     {
       "source_id": "GNDC",
@@ -235,11 +235,11 @@
       "display_name": "경남개발공사",
       "url": "https://www.gndc.co.kr/boardlist.do?seqId=0000006190",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "unknown",
-      "notes": "Multiple keyword conditions require explicit inclusion policy."
+      "notes": "Supply-scope category/title filter passed; adapter, detail/schema/Telegram gates approved for controlled production verification."
     }
   ]
 }
