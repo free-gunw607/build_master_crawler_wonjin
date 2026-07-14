@@ -112,11 +112,11 @@
       "display_name": "광주도시공사",
       "url": "https://www.gmcc.co.kr/board.es?mid=a10402030000&bid=0018&cg_code=C03",
       "keywords": ["공급공고", "공급 공고"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "server_query_board",
-      "notes": "Adapter implemented for board.es act=view&list_no=; live page requires certificate-tolerant session handling. Keep production disabled until detail smoke confirms the TLS exception is acceptable."
+      "notes": "Production-approved after live list/detail smoke. Uses certificate-tolerant requests with a no-www fallback because the primary host is intermittently TLS-unstable."
     },
     {
       "source_id": "UMCA",

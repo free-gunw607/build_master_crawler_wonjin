@@ -852,6 +852,7 @@ def _crawl_simple_family(
     from_date: date,
     max_pages: int = 40,
     verify: bool = True,
+    fallback_urls: tuple[str, ...] = (),
 ) -> tuple[list[Notice], list[dict[str, str]]]:
     session = requests.Session()
     session.headers.update(DEFAULT_BROWSER_HEADERS)
@@ -863,14 +864,17 @@ def _crawl_simple_family(
         page_params[page_param] = str(page)
         response = None
         last_error: Exception | None = None
-        for attempt in range(3):
-            try:
-                response = session.get(url, params=page_params, timeout=30, verify=verify)
+        for candidate in (url, *fallback_urls):
+            for attempt in range(3):
+                try:
+                    response = session.get(candidate, params=page_params, timeout=30, verify=verify)
+                    break
+                except requests.RequestException as exc:
+                    last_error = exc
+                    if attempt < 2:
+                        time.sleep(1)
+            if response is not None:
                 break
-            except requests.RequestException as exc:
-                last_error = exc
-                if attempt < 2:
-                    time.sleep(1)
         if response is None:
             raise RuntimeError(f"Source request failed after retries: {url}") from last_error
         response.raise_for_status()
@@ -974,7 +978,22 @@ def crawl_jndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
 def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     session = requests.Session()
     session.headers.update(DEFAULT_BROWSER_HEADERS)
-    response = session.get("https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp", timeout=30)
+    response = None
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            response = session.get(
+                "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+                timeout=30,
+                verify=False,
+            )
+            break
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt < 2:
+                time.sleep(1)
+    if response is None:
+        raise RuntimeError("IH source request failed after retries") from last_error
     response.raise_for_status()
     notices, rows = _parse_href_family_page(
         response.text,
@@ -1050,6 +1069,7 @@ def crawl_gmcc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
         from_date=from_date,
         max_pages=40,
         verify=False,
+        fallback_urls=("https://gmcc.co.kr/board.es",),
     )
 
 
@@ -1071,6 +1091,8 @@ def crawl_cndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
         },
         from_date=from_date,
         max_pages=30,
+        verify=False,
+        fallback_urls=("https://jbdc.co.kr/notice/notice.do",),
     )
 
 
