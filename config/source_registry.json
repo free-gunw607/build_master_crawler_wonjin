@@ -162,11 +162,11 @@
       "display_name": "강원도개발공사",
       "url": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
       "keywords": ["공급공고", "공급 공고"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "legacy_php_board",
-      "notes": "Adapter implemented for notice_view.php?intSeq=; live list response is reachable. Production gates remain disabled."
+      "notes": "Supply-title scope filter, detail/schema/Telegram gates approved for controlled production verification."
     },
     {
       "source_id": "CBDC",

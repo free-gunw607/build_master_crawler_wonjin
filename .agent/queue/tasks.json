@@ -40,7 +40,7 @@
       "id": "source-family-batch-03",
       "priority": "normal",
       "status": "in_progress",
-      "summary": "CNDC is production-activated; JBDC is held on CI TLS, GBDC/GNDC need supply-scope filters, and GH candidate needs overlap resolution."
+      "summary": "CNDC/GBDC/GNDC are production-activated; JBDC is held on CI TLS and GH candidate needs overlap resolution."
     }
   ]
 }
