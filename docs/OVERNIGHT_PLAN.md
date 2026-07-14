@@ -69,7 +69,7 @@ Each source gets its own registry status, fixture/smoke evidence, and activation
 - Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC adapter handles the live board with a certificate-tolerant session and remains disabled pending detail/security review.
 - Batch-03 progress: CNDC/JBDC onclick adapters and GBDC/GNDC JSON-board adapters are implemented and live-smoked; GH sale/rental candidate adapter is implemented, with 4 exact title overlaps found against active GH in the sampled window. All remain disabled pending detail/schema/overlap gates.
 - Common gate evidence: implemented sources passed normalized-field and source-local dedup checks; sample detail requests returned HTTP 200 for the live-smoked sources. CBDC has no records since 2026-01-01 but returned 30 records in a 2025 range. GMCC remains subject to transient DNS/remote-access checks.
-- Next automatic task: complete detail/schema/Telegram evidence for batch 01, then process the legacy/access-sensitive batch.
+- Next automatic task: run the common all-registered dry-run/detail gate, then promote only sources with complete evidence; transiently inaccessible sources remain disabled.
 
 ## Handoff evidence
 
