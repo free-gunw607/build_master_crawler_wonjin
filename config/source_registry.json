@@ -61,11 +61,11 @@
       "display_name": "인천도시공사",
       "url": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
       "keywords": ["공고"],
-      "enabled": true,
-      "status": "active_v2",
-      "production_approved": true,
+      "enabled": false,
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_board_href",
-      "notes": "Production-approved after live list/detail smoke and retry-enabled CI transport validation; uses certificate-tolerant requests."
+      "notes": "Local live list/detail smoke passes with retries, but GitHub Actions still times out connecting to www.ih.co.kr. Keep disabled until a CI-reachable endpoint or mirror is available."
     },
     {
       "source_id": "BMC",
@@ -198,11 +198,11 @@
       "display_name": "전북개발공사",
       "url": "https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "server_onclick_board",
-      "notes": "Multiple keyword conditions require explicit inclusion policy."
+      "notes": "Production-approved after live list/detail smoke. Uses certificate-tolerant requests with a no-www fallback because the primary host is intermittently TLS-unstable."
     },
     {
       "source_id": "JNDC",
