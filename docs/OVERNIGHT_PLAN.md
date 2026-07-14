@@ -72,7 +72,7 @@ Each source gets its own registry status, fixture/smoke evidence, and activation
 - Batch-02 progress: IH, GDCO, CBDC list adapters are implemented with legacy/div-board fallback parsing; GMCC adapter handles the live board with a certificate-tolerant session and remains disabled pending detail/security review.
 - Batch-03 progress: CNDC/JBDC onclick adapters and GBDC/GNDC JSON-board adapters are implemented and live-smoked; GH sale/rental candidate adapter is implemented, with 4 exact title overlaps found against active GH in the sampled window. All remain disabled pending detail/schema/overlap gates.
 - Common gate evidence: implemented sources passed normalized-field and source-local dedup checks; sample detail requests returned HTTP 200 for the live-smoked sources. CBDC has no records since 2026-01-01 but returned 30 records in a 2025 range. GMCC remains subject to transient DNS/remote-access checks.
-- Handoff tasks: retry IH/JBDC/GMCC availability gates when their external endpoints stabilize; resolve GH candidate overlap before assigning a separate production identity.
+- Handoff tasks: IH and JBDC remain blocked by reproducible GitHub Actions transport failures (IH connect timeout, JBDC TLS handshake failure); revisit when a CI-reachable endpoint or approved mirror exists. GMCC passed production workflow `29359719171`. Resolve GH candidate overlap before assigning a separate production identity.
 
 ## Handoff evidence
 

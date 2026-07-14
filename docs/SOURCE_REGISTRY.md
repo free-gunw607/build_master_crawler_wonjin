@@ -66,7 +66,7 @@
 
 이 중 `DUDC`, `DCCO`, `SCTC`, `JNDC`는 adapter·detail·schema·Telegram gate와 controlled production workflow `29302911754`를 통과해 `active_v2`로 승격했다. `CBDC`, `CNDC`도 같은 gate와 workflow `29303970882`를 통과해 승격했다. IH/JBDC는 live smoke는 통과했지만 CI 원격 TLS/availability 변동으로 hold 중이며, GMCC/GDCO/GBDC/GNDC는 scope/access gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
 `GBDC`, `GNDC`도 supply-scope filter, detail/schema/Telegram gate와 workflow `29355931391`을 통과해 `active_v2`로 승격했다. IH/JBDC는 live smoke는 통과했지만 CI 원격 TLS/availability 변동으로 hold 중이며, GMCC/GDCO는 scope/access gate 전이므로 `enabled: false`, `production_approved: false`를 유지한다. 2026-07-14 04:56 KST post-production dry-run에서 6개 source 합계 80건을 재현했다.
-`GDCO`도 supply-title filter, detail/schema/Telegram gate와 workflow `29356087399`를 통과해 `active_v2`로 승격했다. 현재 registry의 14개 source가 production enabled이고, IH/JBDC/GMCC는 remote availability hold, GH candidate는 overlap gate, 서울 후보는 기존 i-SH 병합 상태다.
+`GDCO`도 supply-title filter, detail/schema/Telegram gate와 workflow `29356087399`를 통과해 `active_v2`로 승격했다. 이후 GMCC는 certificate-tolerant transport와 no-www fallback을 적용하고 workflow `29359719171`에서 실제 production 검증을 통과해 `active_v2`로 승격했다. IH는 workflow `29359900687`에서 GitHub Actions 연결 timeout, JBDC는 workflow `29360120068`에서 primary/fallback 모두 TLS handshake failure가 재현되어 다시 hold했다. 현재 registry는 15개 source가 production enabled이고, IH/JBDC는 CI transport hold, GH candidate는 overlap gate, 서울 후보는 기존 i-SH 병합 상태다.
 
 이 registry는 신규 소스를 production에 자동 연결하지 않는다. 활성화는 parser와 운영 검증이 끝난 뒤 별도 변경으로 수행한다.
 
@@ -79,4 +79,4 @@ registry에 남아 있던 소스도 모두 adapter dispatch 경로에 등록했�
 - `GBDC`, `GNDC`: JSON board API adapter
 - `GH_SALE_RENTAL_CANDIDATE`: `articleNo` adapter; active GH와 제목 중복 정책을 별도 gate로 유지
 
-현재 live smoke 증거는 CNDC 4건, JBDC 9건, GBDC 14건, GNDC 29건, GH 후보 39건이며, 이 수치는 production 승인이나 Sheets tab 생성을 의미하지 않는다.
+현재 live smoke 증거는 IH 9건, JBDC 9건, GMCC 1건, CNDC 4건, GBDC 14건, GNDC 29건, GH 후보 39건이며, 이 수치는 CI production 승인이나 Sheets tab 생성을 의미하지 않는다. GMCC만 별도로 production workflow까지 통과했다.

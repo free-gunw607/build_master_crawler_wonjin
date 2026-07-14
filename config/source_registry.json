@@ -198,11 +198,11 @@
       "display_name": "전북개발공사",
       "url": "https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
-      "enabled": true,
-      "status": "active_v2",
-      "production_approved": true,
+      "enabled": false,
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_onclick_board",
-      "notes": "Production-approved after live list/detail smoke. Uses certificate-tolerant requests with a no-www fallback because the primary host is intermittently TLS-unstable."
+      "notes": "Local live list/detail smoke passes with certificate-tolerant requests, but GitHub Actions fails TLS handshake on both primary and fallback host paths. Keep disabled until CI-reachable transport is available."
     },
     {
       "source_id": "JNDC",
