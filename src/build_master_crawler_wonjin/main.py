@@ -972,22 +972,21 @@ def crawl_jndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
 
 
 def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
-    return _crawl_simple_family(
+    session = requests.Session()
+    session.headers.update(DEFAULT_BROWSER_HEADERS)
+    response = session.get("https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp", timeout=30)
+    response.raise_for_status()
+    notices, rows = _parse_href_family_page(
+        response.text,
         source="IH",
-        url="https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
-        params={"cate1": "b", "bcd": "sale_lease", "pgdiv": "land_notice"},
-        page_param="pgno",
-        parser_kwargs={
-            "source": "IH",
-            "link_selector": "a[href*='bbsMsgDetail.do?']",
-            "id_pattern": r"(?:^|[?&])msg_seq=(\d+)",
-            "raw_id_type": "msg_seq",
-            "detail_base": "https://www.ih.co.kr",
-            "area": "인천",
-        },
-        from_date=from_date,
-        max_pages=20,
+        link_selector="a[href*='bbsMsgDetail.do?'][href*='pgdiv=land_notice']",
+        id_pattern=r"(?:^|[?&])msg_seq=(\d+)",
+        raw_id_type="msg_seq",
+        detail_base="https://www.ih.co.kr",
+        area="인천",
     )
+    filtered = [(n, row) for n, row in zip(notices, rows) if not _parse_dot_date(n.posted_at) or _parse_dot_date(n.posted_at) >= from_date]
+    return [n for n, _ in filtered], [row for _, row in filtered]
 
 
 def crawl_gdco(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
