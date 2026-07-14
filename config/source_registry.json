@@ -61,11 +61,11 @@
       "display_name": "인천도시공사",
       "url": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
       "keywords": ["공고"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "server_board_href",
-      "notes": "Adapter implemented for bbsMsgDetail.do?msg_seq=; live list response is reachable. Production gates remain disabled."
+      "notes": "Production-approved after live list/detail smoke and retry-enabled CI transport validation; uses certificate-tolerant requests."
     },
     {
       "source_id": "BMC",
