@@ -27,7 +27,7 @@
 - DUDC/DCCO/SCTC/JNDC passed controlled activation run `29302911754` and now use the same production Sheets/Telegram contract
 - CBDC/CNDC passed controlled activation run `29303970882`; IH/JBDC were held back after CI remote TLS/availability failures to protect the hourly job
 - GBDC/GNDC passed filtered production activation run `29355931391`; only IH/JBDC/GMCC/GDCO/GH candidate remain held or disabled
-- GDCO passed filtered production activation run `29356087399`; GMCC then passed resilient transport validation in production workflow `29359719171`, bringing the enabled set to 15. IH failed CI connection timeout in `29359900687` and JBDC failed CI TLS handshake in `29360120068`, so both remain held.
+- GDCO passed filtered production activation run `29356087399`; GMCC then passed resilient transport validation in production workflow `29359719171`. IH failed CI connection timeout in `29359900687`, JBDC failed CI TLS handshake in `29360120068`, and SCTC began returning 404 in the 2026-07-31 runs, so all three remain held. Source-level failure isolation now lets the remaining 14 sources reach Sheets/Telegram.
 
 ## Default operating behavior
 - proceed autonomously in normal repo-local work

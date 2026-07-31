@@ -56,7 +56,7 @@ v1_frozen
 - GDCO promoted to `active_v2` after supply-title filtering; controlled activation workflow `29356087399` passed
 
 ## Current blockers
-- no production runtime blocker; GMCC was promoted after workflow `29359719171`; IH remains disabled after CI timeout in `29359900687`, JBDC remains disabled after CI TLS handshake failure in `29360120068`, and GH candidate remains subject to overlap policy
+- source-specific production failures are now isolated: GMCC remains active after workflow `29359719171`; IH remains disabled after CI timeout in `29359900687`, JBDC after CI TLS handshake failure in `29360120068`, and SCTC after current CI 404. Failed source IDs/errors are written to runlog and Telegram while the remaining sources continue.
 
 ## Capability and MCP status
 - required external capabilities: GitHub Actions secrets, Google Sheets API, Telegram Bot API

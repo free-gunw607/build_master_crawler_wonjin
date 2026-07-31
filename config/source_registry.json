@@ -87,11 +87,11 @@
       "url": "https://www.dudc.or.kr/ko/page.do?mnu_uid=101&appId=sale",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": true,
-      "status": "active_v2",
-      "production_approved": true,
+      "status": "adapter_ready",
+      "production_approved": false,
       "parser_family": "server_query_board",
       "collection_policy": "board_scope",
-      "notes": "Adapter, normalized/dedup/detail smoke, common Sheets schema, and Telegram path are approved for controlled production verification."
+      "notes": "Previously production-enabled, but current GitHub Actions requests receive HTTP 404 while browser/search cache still shows the board. Hold until the live endpoint stabilizes; source-level failure isolation prevents it from blocking other sources."
     },
     {
       "source_id": "DCCO",
@@ -137,12 +137,12 @@
       "display_name": "세종도시교통공사/도시개발 게시판",
       "url": "https://www.sctc.kr/bbs/BBSS2110052040247196",
       "keywords": ["공급공고", "공급 공고"],
-      "enabled": true,
-      "status": "active_v2",
+      "enabled": false,
+      "status": "adapter_ready",
       "parser_family": "server_href_board",
-      "production_approved": true,
+      "production_approved": false,
       "collection_policy": "board_scope",
-      "notes": "Adapter, normalized/dedup/detail smoke, common Sheets schema, and Telegram path are approved for controlled production verification."
+      "notes": "Current GitHub Actions requests receive HTTP 404 while browser/search cache still shows the board. Hold until the live endpoint stabilizes; source-level failure isolation prevents it from blocking other sources."
     },
     {
       "source_id": "GH_SALE_RENTAL_CANDIDATE",

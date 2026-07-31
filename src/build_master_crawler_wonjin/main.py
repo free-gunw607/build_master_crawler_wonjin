@@ -1485,6 +1485,7 @@ def sync_records_to_gsheet(
     records: list[Notice],
     dry_run: bool,
     source_ids: Iterable[str] | None = None,
+    source_errors: dict[str, str] | None = None,
 ) -> tuple[list[Notice], dict[str, str]]:
     run_utc = datetime.now(UTC).replace(microsecond=0)
     run_kst = run_utc.astimezone(ZoneInfo(KST))
@@ -1494,6 +1495,9 @@ def sync_records_to_gsheet(
         "run_at_kst": run_kst.strftime("%Y-%m-%d %H:%M"),
         "run_at_utc": run_utc.isoformat().replace("+00:00", "Z"),
     }
+    errors = source_errors or {}
+    meta["failed_sources"] = ",".join(errors)
+    meta["failed_source_errors"] = " | ".join(f"{source}: {message}" for source, message in errors.items())
 
     if dry_run:
         return records, meta
@@ -1573,6 +1577,8 @@ def sync_records_to_gsheet(
             f"fetched_{metric_names.get(source_id, source_id.lower().replace('-', '_'))}"
             for source_id in source_tabs
         ],
+        "failed_sources",
+        "failed_source_errors",
     ]
     ws_runlog = _ensure_worksheet(
         sh,
@@ -1680,6 +1686,8 @@ def sync_records_to_gsheet(
             len(unique_records),
             len(new_records),
             *[counts.get(source_id, 0) for source_id in source_tabs],
+            meta["failed_sources"],
+            meta["failed_source_errors"],
         ],
         value_input_option="RAW",
     )
@@ -1743,12 +1751,16 @@ def send_telegram(records: list[Notice], dry_run: bool, run_meta: dict[str, str]
     hour = kst_now.hour
     time_map = " ".join([f"[{h:02d}]" if h == hour else f"{h:02d}" for h in range(24)])
 
+    failure_line = ""
+    if run_meta.get("failed_sources"):
+        failure_line = f"\n- 실패 source: {html.escape(run_meta['failed_sources'])}"
     header = (
         "<b>[크롤링 실행 알림]</b>\n"
         f"- 실행 회차: {run_seq}회\n"
         f"- 실행 시각: {run_time}\n"
         f"- 시간맵(현재): {time_map}\n"
         f"- 신규 건수: {len(records)}건"
+        f"{failure_line}"
     )
     _telegram_post(token, chat_id, header)
 
@@ -1809,8 +1821,13 @@ def run(
 
     source_records: dict[str, list[Notice]] = {}
     source_rows: dict[str, list[dict[str, str]]] = {}
+    source_errors: dict[str, str] = {}
     for source_id in enabled_sources:
-        records, rows = crawl_source(source_id, from_date)
+        try:
+            records, rows = crawl_source(source_id, from_date)
+        except Exception as exc:
+            source_errors[source_id] = f"{type(exc).__name__}: {exc}"
+            records, rows = [], []
         source_records[source_id] = records
         source_rows[source_id] = rows
     all_records = sorted(
@@ -1845,6 +1862,7 @@ def run(
         all_records,
         dry_run=dry_run,
         source_ids=enabled_sources,
+        source_errors=source_errors,
     )
     send_telegram(new_records, dry_run=dry_run, run_meta=run_meta)
 
@@ -1852,6 +1870,7 @@ def run(
         "from_date": from_date.isoformat(),
         "counts": {**{source_id: len(records) for source_id, records in source_records.items()}, "ALL": len(all_records)},
         "new_count": len(new_records),
+        "source_errors": source_errors,
         "run_id": run_meta["run_id"],
         "run_at_kst": run_meta["run_at_kst"],
         "output_xlsx": out_path,
