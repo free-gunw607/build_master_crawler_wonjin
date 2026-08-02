@@ -853,6 +853,8 @@ def _crawl_simple_family(
     max_pages: int = 40,
     verify: bool = True,
     fallback_urls: tuple[str, ...] = (),
+    request_timeout: int = 30,
+    request_attempts: int = 3,
 ) -> tuple[list[Notice], list[dict[str, str]]]:
     session = requests.Session()
     session.headers.update(DEFAULT_BROWSER_HEADERS)
@@ -865,13 +867,13 @@ def _crawl_simple_family(
         response = None
         last_error: Exception | None = None
         for candidate in (url, *fallback_urls):
-            for attempt in range(3):
+            for attempt in range(request_attempts):
                 try:
-                    response = session.get(candidate, params=page_params, timeout=30, verify=verify)
+                    response = session.get(candidate, params=page_params, timeout=request_timeout, verify=verify)
                     break
                 except requests.RequestException as exc:
                     last_error = exc
-                    if attempt < 2:
+                    if attempt < request_attempts - 1:
                         time.sleep(1)
             if response is not None:
                 break
@@ -984,14 +986,12 @@ def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
         "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
         "http://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
     ):
-        for attempt in range(3):
+        for attempt in range(1):
             try:
-                response = session.get(candidate, timeout=30, verify=False)
+                response = session.get(candidate, timeout=10, verify=False)
                 break
             except requests.RequestException as exc:
                 last_error = exc
-                if attempt < 2:
-                    time.sleep(1)
         if response is not None:
             break
     if response is None:
@@ -1093,11 +1093,6 @@ def crawl_cndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
         },
         from_date=from_date,
         max_pages=30,
-        verify=False,
-        fallback_urls=(
-            "https://jbdc.co.kr/notice/notice.do",
-            "http://www.jbdc.co.kr/notice/notice.do",
-        ),
     )
 
 
@@ -1165,6 +1160,13 @@ def crawl_jbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
             },
             from_date=from_date,
             max_pages=30,
+            verify=False,
+            request_timeout=10,
+            request_attempts=1,
+            fallback_urls=(
+                "https://jbdc.co.kr/notice/notice.do",
+                "http://www.jbdc.co.kr/notice/notice.do",
+            ),
         )
     except Exception as primary_error:
         try:
