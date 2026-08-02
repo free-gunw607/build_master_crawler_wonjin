@@ -4,6 +4,7 @@ import argparse
 import html
 import json
 import os
+import socket
 import time
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -997,13 +998,34 @@ def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
         ),
         ("https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp", {}),
         ("http://www.ih.co.kr/main/sale_lease/board/land_notice.jsp", {}),
-    ):
+        ):
         for attempt in range(1):
             try:
+                # Preserve TLS SNI for IH while pinning its current IPv4.  The
+                # runner intermittently cannot resolve/reach the public DNS
+                # path, while an IP URL loses SNI and is rejected upstream.
+                original_getaddrinfo = socket.getaddrinfo
+
+                def ih_getaddrinfo(host, *args, **kwargs):
+                    if host in {"www.ih.co.kr", "ih.co.kr"}:
+                        return [
+                            (
+                                socket.AF_INET,
+                                socket.SOCK_STREAM,
+                                socket.IPPROTO_TCP,
+                                "",
+                                ("124.111.90.20", args[0] if args and args[0] else 443),
+                            )
+                        ]
+                    return original_getaddrinfo(host, *args, **kwargs)
+
+                socket.getaddrinfo = ih_getaddrinfo
                 response = session.get(candidate, headers=request_headers, timeout=10, verify=False)
                 break
             except requests.RequestException as exc:
                 last_error = exc
+            finally:
+                socket.getaddrinfo = original_getaddrinfo
         if response is not None:
             break
     if response is None:
