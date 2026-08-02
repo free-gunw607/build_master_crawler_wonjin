@@ -61,11 +61,11 @@
       "display_name": "인천도시공사",
       "url": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
       "keywords": ["공고"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "server_board_href",
-      "notes": "Local live list/detail smoke passes with retries, but GitHub Actions still times out connecting to www.ih.co.kr. Keep disabled until a CI-reachable endpoint or mirror is available."
+      "notes": "Production revalidation uses HTTPS with HTTP fallback because the HTTPS endpoint intermittently resets or times out from CI."
     },
     {
       "source_id": "BMC",
@@ -198,11 +198,11 @@
       "display_name": "전북개발공사",
       "url": "https://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
       "keywords": ["공급공고", "공급 공고", "수의계약"],
-      "enabled": false,
-      "status": "adapter_ready",
-      "production_approved": false,
+      "enabled": true,
+      "status": "active_v2",
+      "production_approved": true,
       "parser_family": "server_onclick_board",
-      "notes": "Local live list/detail smoke passes with certificate-tolerant requests, but GitHub Actions fails TLS handshake on both primary and fallback host paths. Keep disabled until CI-reachable transport is available."
+      "notes": "Production revalidation uses certificate-tolerant HTTPS/no-www/HTTP fallback transport because the primary host intermittently fails TLS handshake in CI."
     },
     {
       "source_id": "JNDC",

@@ -980,18 +980,20 @@ def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     session.headers.update(DEFAULT_BROWSER_HEADERS)
     response = None
     last_error: Exception | None = None
-    for attempt in range(3):
-        try:
-            response = session.get(
-                "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
-                timeout=30,
-                verify=False,
-            )
+    for candidate in (
+        "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+        "http://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+    ):
+        for attempt in range(3):
+            try:
+                response = session.get(candidate, timeout=30, verify=False)
+                break
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < 2:
+                    time.sleep(1)
+        if response is not None:
             break
-        except requests.RequestException as exc:
-            last_error = exc
-            if attempt < 2:
-                time.sleep(1)
     if response is None:
         raise RuntimeError("IH source request failed after retries") from last_error
     response.raise_for_status()
@@ -1092,7 +1094,10 @@ def crawl_cndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
         from_date=from_date,
         max_pages=30,
         verify=False,
-        fallback_urls=("https://jbdc.co.kr/notice/notice.do",),
+        fallback_urls=(
+            "https://jbdc.co.kr/notice/notice.do",
+            "http://www.jbdc.co.kr/notice/notice.do",
+        ),
     )
 
 
