@@ -135,14 +135,14 @@
       "source_id": "SCTC",
       "region": "세종",
       "display_name": "세종도시교통공사/도시개발 게시판",
-      "url": "https://www.sctc.kr/bbs/BBSS2110052040247196",
+            "url": "https://www.sctc.kr/www/bbs/list.do?mnucd=137&scBbsMngSn=9",
       "keywords": ["공급공고", "공급 공고"],
       "enabled": false,
-      "status": "adapter_ready",
+            "status": "active_v2",
       "parser_family": "server_href_board",
-      "production_approved": false,
+            "production_approved": true,
       "collection_policy": "board_scope",
-      "notes": "Current GitHub Actions requests receive HTTP 404 while browser/search cache still shows the board. Hold until the live endpoint stabilizes; source-level failure isolation prevents it from blocking other sources."
+            "notes": "Migrated from retired BBSS endpoint to the current official development-board CMS (mnucd=137, scBbsMngSn=9); uses goView(bbsSn) detail links and board-scope collection."
     },
     {
       "source_id": "GH_SALE_RENTAL_CANDIDATE",

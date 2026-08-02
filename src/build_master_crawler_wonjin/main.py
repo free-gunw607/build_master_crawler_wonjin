@@ -817,7 +817,7 @@ def _parse_href_family_page(
             if not raw_id or raw_id in seen_ids:
                 continue
             seen_ids.add(raw_id)
-            container = a.find_parent(["li", "div"]) or a.parent
+            container = a.find_parent(class_="board-list-row") or a.find_parent(["li", "div"]) or a.parent
             title = _clean_text(a.get_text(" ", strip=True))
             posted = _date_from_container(container)
             detail_url = detail_url_template.format(raw_id=raw_id) if detail_url_template else urljoin(detail_base, link)
@@ -939,19 +939,21 @@ def crawl_dcco(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
 def crawl_sctc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     return _crawl_simple_family(
         source="SCTC",
-        url="https://www.sctc.kr/bbs/BBSS2110052040247196",
-        params={},
+        url="https://www.sctc.kr/www/bbs/list.do",
+        params={"mnucd": "137", "scBbsMngSn": "9", "size": "30"},
         page_param="page",
         parser_kwargs={
             "source": "SCTC",
-            "link_selector": "a[href*='/bbs/view/']",
-            "id_pattern": r"/(BBSW[^/?]+)/?",
-            "raw_id_type": "bbs_id",
+            "link_selector": "a[onclick*='goView']",
+            "id_pattern": r"goView\((\d+)",
+            "raw_id_type": "bbsSn",
             "detail_base": "https://www.sctc.kr",
+            "detail_url_template": "https://www.sctc.kr/www/bbs/view.do?mnucd=137&scBbsMngSn=9&bbsSn={raw_id}",
+            "link_attribute": "onclick",
             "area": "세종",
         },
         from_date=from_date,
-        max_pages=10,
+        max_pages=5,
     )
 
 
