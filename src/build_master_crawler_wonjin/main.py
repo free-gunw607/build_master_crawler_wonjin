@@ -985,6 +985,10 @@ def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     last_error: Exception | None = None
     for candidate, request_headers in (
         (
+            "https://newsletter.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
+            {},
+        ),
+        (
             "https://124.111.90.20/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
             {"Host": "www.ih.co.kr"},
         ),

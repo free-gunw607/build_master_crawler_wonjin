@@ -65,7 +65,7 @@
       "status": "active_v2",
       "production_approved": true,
       "parser_family": "server_board_href",
-      "notes": "Uses the current bbsMsgList endpoint with legacy land_notice.jsp and HTTP fallbacks; the old route intermittently resets or times out from CI."
+            "notes": "Uses the official newsletter.ih.co.kr mirror of the same bbsMsgList CMS first, then the main domain with SNI-preserving and legacy fallbacks; no API key required."
     },
     {
       "source_id": "BMC",
