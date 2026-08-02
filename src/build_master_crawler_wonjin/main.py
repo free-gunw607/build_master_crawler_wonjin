@@ -49,7 +49,7 @@ SOURCE_BOARD_URL = {
     "UMCA": "https://www.umca.co.kr/umca/bbs/list.do?bbsId=BBS_0000000000000003&mId=001001003000000000",
     "DUDC": "https://www.dudc.or.kr/ko/page.do?mnu_uid=101&appId=sale",
     "DCCO": "https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1",
-    "SCTC": "https://www.sctc.kr/bbs/BBSS2110052040247196",
+    "SCTC": "https://www.sctc.kr/www/bbs/list.do?mnucd=137&scBbsMngSn=9",
     "JNDC": "https://www.jndc.co.kr/web/main/bbs/parcelout",
     "IH": "https://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
     "GDCO": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
