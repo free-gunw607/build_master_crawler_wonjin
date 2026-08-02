@@ -982,15 +982,25 @@ def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     session.headers.update(DEFAULT_BROWSER_HEADERS)
     response = None
     last_error: Exception | None = None
-    for candidate in (
-        "https://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
-        "http://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
-        "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
-        "http://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+    for candidate, request_headers in (
+        (
+            "https://124.111.90.20/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
+            {"Host": "www.ih.co.kr"},
+        ),
+        (
+            "https://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
+            {},
+        ),
+        (
+            "http://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
+            {},
+        ),
+        ("https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp", {}),
+        ("http://www.ih.co.kr/main/sale_lease/board/land_notice.jsp", {}),
     ):
         for attempt in range(1):
             try:
-                response = session.get(candidate, timeout=10, verify=False)
+                response = session.get(candidate, headers=request_headers, timeout=10, verify=False)
                 break
             except requests.RequestException as exc:
                 last_error = exc
