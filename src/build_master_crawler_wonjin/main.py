@@ -1101,25 +1101,76 @@ def crawl_cndc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     )
 
 
-def crawl_jbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
-    return _crawl_simple_family(
-        source="JBDC",
-        url="https://www.jbdc.co.kr/notice/notice.do",
-        params={"bbsgubun": "2", "bbsId": "BBSMSTR_000000000011", "mode": "list"},
-        page_param="pageIndex",
-        parser_kwargs={
-            "source": "JBDC",
-            "link_selector": "a[href*='setView']",
-            "id_pattern": r"setView\(['\"](\d+)",
-            "raw_id_type": "nttId",
-            "detail_base": "https://www.jbdc.co.kr",
-            "detail_url_template": "https://www.jbdc.co.kr/notice/notice.do?bbsId=BBSMSTR_000000000011&mode=view&nttId={raw_id}&pageIndex=1",
-            "link_attribute": "href",
-            "area": "전북",
-        },
-        from_date=from_date,
-        max_pages=30,
+def _crawl_jbdc_proxy(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    response = requests.get(
+        "https://r.jina.ai/http://www.jbdc.co.kr/notice/notice.do?bbsgubun=2",
+        headers=DEFAULT_BROWSER_HEADERS,
+        timeout=30,
     )
+    response.raise_for_status()
+    notices: list[Notice] = []
+    rows: list[dict[str, str]] = []
+    pattern = re.compile(
+        r"^\|\s*\d+\s*\|\s*[^|]*\|\s*\[([^\]]+)\]\(javascript:setView\(['\"](\d+)['\"]\).*?\)"
+        r"\s*(?:!\[[^\]]*\]\([^)]*\))?\s*\|\s*[^|]*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([\d,]+)\s*\|",
+        re.MULTILINE,
+    )
+    for match in pattern.finditer(response.text):
+        title, raw_id, posted_at, views = match.groups()
+        posted_date = date.fromisoformat(posted_at)
+        if posted_date < from_date:
+            continue
+        detail_url = (
+            "https://www.jbdc.co.kr/notice/notice.do?bbsId=BBSMSTR_000000000011"
+            f"&mode=view&nttId={raw_id}&pageIndex=1"
+        )
+        notices.append(
+            Notice(
+                source="JBDC",
+                notice_id=raw_id,
+                raw_id_type="nttId",
+                raw_id_value=raw_id,
+                id_sort_num=_id_sort_num("JBDC", raw_id),
+                title=title.strip(),
+                posted_at=posted_at,
+                deadline_at="",
+                status="",
+                detail_url=detail_url,
+                attachments="",
+                area="전북",
+                category="토지",
+                views=views.replace(",", ""),
+            )
+        )
+        rows.append({"번호": raw_id, "공고명": title.strip(), "작성일": posted_at, "조회수": views.replace(",", ""), "detail_url": detail_url})
+    return notices, rows
+
+
+def crawl_jbdc(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
+    try:
+        return _crawl_simple_family(
+            source="JBDC",
+            url="https://www.jbdc.co.kr/notice/notice.do",
+            params={"bbsgubun": "2", "bbsId": "BBSMSTR_000000000011", "mode": "list"},
+            page_param="pageIndex",
+            parser_kwargs={
+                "source": "JBDC",
+                "link_selector": "a[href*='setView']",
+                "id_pattern": r"setView\(['\"](\d+)",
+                "raw_id_type": "nttId",
+                "detail_base": "https://www.jbdc.co.kr",
+                "detail_url_template": "https://www.jbdc.co.kr/notice/notice.do?bbsId=BBSMSTR_000000000011&mode=view&nttId={raw_id}&pageIndex=1",
+                "link_attribute": "href",
+                "area": "전북",
+            },
+            from_date=from_date,
+            max_pages=30,
+        )
+    except Exception as primary_error:
+        try:
+            return _crawl_jbdc_proxy(from_date)
+        except Exception as proxy_error:
+            raise RuntimeError(f"JBDC primary and proxy transports failed: {primary_error}; {proxy_error}") from proxy_error
 
 
 def _crawl_json_family(
