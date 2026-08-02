@@ -131,13 +131,13 @@
       "collection_policy": "board_scope",
       "notes": "Pilot 2. Server-rendered dedicated sale-notice board with dataId embedded in onclick/detail URL. Collect board scope; keywords are discovery hints, not a title filter."
     },
-    {
-      "source_id": "SCTC",
+        {
+            "source_id": "SCTC",
       "region": "세종",
       "display_name": "세종도시교통공사/도시개발 게시판",
             "url": "https://www.sctc.kr/www/bbs/list.do?mnucd=137&scBbsMngSn=9",
       "keywords": ["공급공고", "공급 공고"],
-      "enabled": false,
+            "enabled": true,
             "status": "active_v2",
       "parser_family": "server_href_board",
             "production_approved": true,
