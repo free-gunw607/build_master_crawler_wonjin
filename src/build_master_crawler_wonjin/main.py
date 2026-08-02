@@ -87,6 +87,7 @@ SOURCE_TAB_CATALOG = {
     "GH_SALE_RENTAL_CANDIDATE": "GH_SALE_RENTAL_CANDIDATE",
 }
 ALLOWED_TABS = {INDEX_TAB, RUNLOG_TAB, "GUIDE", *SOURCE_TAB_CATALOG.values()}
+STANDARD_COLUMN_WIDTHS = [80, 120, 380, 110, 110, 90, 420, 90, 120, 90, 80, 130, 140, 170, 100, 100, 100]
 DEFAULT_HOURLY_LOOKBACK_DAYS = 2
 DEFAULT_BOOTSTRAP_DAYS = 365
 PILOT_SOURCES = ("BMC", "UMCA", "DUDC", "DCCO", "SCTC", "JNDC")
@@ -1505,6 +1506,73 @@ def _ensure_worksheet(
     return ws
 
 
+def _normalize_worksheet_layout(
+    sh: gspread.Spreadsheet,
+    worksheets: Iterable[gspread.Worksheet],
+    header_width: int,
+) -> None:
+    """Keep source tabs visually consistent with the original production tabs."""
+    header_format = {
+        "backgroundColor": {"red": 0.46666667, "green": 0.23921569, "blue": 0.10980392},
+        "horizontalAlignment": "CENTER",
+        "verticalAlignment": "MIDDLE",
+        "wrapStrategy": "CLIP",
+        "textFormat": {
+            "bold": True,
+            "fontFamily": "Arial",
+            "fontSize": 10,
+            "foregroundColor": {"red": 1, "green": 1, "blue": 1},
+        },
+    }
+    body_format = {
+        "horizontalAlignment": "LEFT",
+        "verticalAlignment": "MIDDLE",
+        "wrapStrategy": "CLIP",
+        "textFormat": {"bold": False, "fontFamily": "Arial", "fontSize": 10},
+    }
+    requests: list[dict[str, object]] = []
+    for ws in worksheets:
+        sheet_id = int(ws.id)
+        requests.append(
+            {
+                "updateSheetProperties": {
+                    "properties": {"sheetId": sheet_id, "gridProperties": {"frozenRowCount": 1}},
+                    "fields": "gridProperties.frozenRowCount",
+                }
+            }
+        )
+        requests.append(
+            {
+                "repeatCell": {
+                    "range": {"sheetId": sheet_id, "startRowIndex": 0, "endRowIndex": 1, "startColumnIndex": 0, "endColumnIndex": header_width},
+                    "cell": {"userEnteredFormat": header_format},
+                    "fields": "userEnteredFormat",
+                }
+            }
+        )
+        requests.append(
+            {
+                "repeatCell": {
+                    "range": {"sheetId": sheet_id, "startRowIndex": 1, "startColumnIndex": 0, "endColumnIndex": header_width},
+                    "cell": {"userEnteredFormat": body_format},
+                    "fields": "userEnteredFormat.horizontalAlignment,userEnteredFormat.verticalAlignment,userEnteredFormat.wrapStrategy,userEnteredFormat.textFormat",
+                }
+            }
+        )
+        for index, pixel_size in enumerate(STANDARD_COLUMN_WIDTHS[:header_width]):
+            requests.append(
+                {
+                    "updateDimensionProperties": {
+                        "range": {"sheetId": sheet_id, "dimension": "COLUMNS", "startIndex": index, "endIndex": index + 1},
+                        "properties": {"pixelSize": pixel_size},
+                        "fields": "pixelSize",
+                    }
+                }
+            )
+    if requests:
+        sh.batch_update({"requests": requests})
+
+
 def _validate_tab_names(index_tab: str, runlog_tab: str, source_tabs: dict[str, str]) -> None:
     used = [index_tab, runlog_tab, *source_tabs.values()]
     invalid = [name for name in used if name not in ALLOWED_TABS]
@@ -1688,6 +1756,10 @@ def sync_records_to_gsheet(
         for column, header in enumerate(runlog_headers, start=1):
             if header not in existing_runlog_headers:
                 ws_runlog.update_cell(1, column, header)
+        existing_runlog_headers = ws_runlog.row_values(1)
+
+    _normalize_worksheet_layout(sh, [ws_index, *ws_source.values()], header_width=17)
+    _normalize_worksheet_layout(sh, [ws_runlog], header_width=len(existing_runlog_headers or runlog_headers))
 
     # Build a global existing keyset from index + source archive tabs.
     existing = load_existing_keys(ws_index)
@@ -1776,17 +1848,20 @@ def sync_records_to_gsheet(
     for r in unique_records:
         counts[r.source] = counts.get(r.source, 0) + 1
 
+    runlog_values = [
+        meta["run_id"],
+        meta["run_at_kst"],
+        meta["run_at_utc"],
+        len(unique_records),
+        len(new_records),
+        *[counts.get(source_id, 0) for source_id in source_tabs],
+        meta["failed_sources"],
+        meta["failed_source_errors"],
+    ]
+    canonical_runlog = dict(zip(runlog_headers, runlog_values))
+    append_values = [canonical_runlog.get(header, "") for header in existing_runlog_headers or runlog_headers]
     ws_runlog.append_row(
-        [
-            meta["run_id"],
-            meta["run_at_kst"],
-            meta["run_at_utc"],
-            len(unique_records),
-            len(new_records),
-            *[counts.get(source_id, 0) for source_id in source_tabs],
-            meta["failed_sources"],
-            meta["failed_source_errors"],
-        ],
+        append_values,
         value_input_option="RAW",
     )
     return new_records, meta
