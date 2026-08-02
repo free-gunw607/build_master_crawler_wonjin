@@ -1221,6 +1221,10 @@ def _crawl_json_family(
 ) -> tuple[list[Notice], list[dict[str, str]]]:
     session = requests.Session()
     session.headers.update({**DEFAULT_BROWSER_HEADERS, "Accept": "application/json, text/plain, */*", "X-Requested-With": "XMLHttpRequest"})
+    # Some public institutions intermittently publish only one of the www/root
+    # DNS aliases.  Keep both official hostnames as transport fallbacks so a
+    # DNS issue is not misreported as a parser failure.
+    hosts = [f"www.{host}.co.kr", f"{host}.co.kr"]
     notices: list[Notice] = []
     rows: list[dict[str, str]] = []
     seen: set[tuple[str, str]] = set()
@@ -1228,20 +1232,24 @@ def _crawl_json_family(
         response = None
         last_error: Exception | None = None
         for attempt in range(3):
-            try:
-                response = session.get(
-                    f"https://www.{host}.co.kr/getBbsArticleList.do",
-                    params={"BBS_ID": bbs_id, "BBS_TYPE": "L", "CURRENT_PAGE": str(page), "SEARCH_CONTITION": "", "SEARCH_KEYWORD": ""},
-                    timeout=30,
-                    verify=False,
-                )
+            for candidate_host in hosts:
+                try:
+                    response = session.get(
+                        f"https://{candidate_host}/getBbsArticleList.do",
+                        params={"BBS_ID": bbs_id, "BBS_TYPE": "L", "CURRENT_PAGE": str(page), "SEARCH_CONTITION": "", "SEARCH_KEYWORD": ""},
+                        timeout=30,
+                        verify=False,
+                    )
+                    break
+                except requests.RequestException as exc:
+                    last_error = exc
+            if response is not None:
                 break
-            except requests.RequestException as exc:
-                last_error = exc
-                if attempt < 2:
-                    time.sleep(1)
+            if attempt < 2:
+                time.sleep(1)
         if response is None:
-            raise RuntimeError(f"JSON source request failed after retries: {host}") from last_error
+            detail = f": {last_error}" if last_error else ""
+            raise RuntimeError(f"JSON source request failed after retries: {host}{detail}") from last_error
         response.raise_for_status()
         payload = response.json()
         items = payload.get("resultList", [])
@@ -1261,7 +1269,7 @@ def _crawl_json_family(
             category = _clean_text(str(item.get("COLM1_VAL", "")))
             if category not in ("분양", "분양공고") or not _is_supply_title(title):
                 continue
-            detail_url = f"https://www.{host}.co.kr/boardview/boardview.do?seqId={'0000003631' if source == 'GBDC' else '0000006190'}&BBS_ID={bbs_id}&BBS_TYPE=L&IPDS_IDX={raw_id}"
+            detail_url = f"https://{host}.co.kr/boardview/boardview.do?seqId={'0000003631' if source == 'GBDC' else '0000006190'}&BBS_ID={bbs_id}&BBS_TYPE=L&IPDS_IDX={raw_id}"
             seen.add((source, raw_id))
             notices.append(Notice(source, raw_id, "IPDS_IDX", raw_id, _id_sort_num(source, raw_id), title, posted, "", "", detail_url, "Y" if item.get("ATTACH_CNT") else "", area, "토지", str(item.get("IPDS_COUNTS", ""))))
             rows.append({"번호": str(item.get("BNUM", "")), "제목": title, "작성일": posted, "IPDS_IDX": raw_id, "detail_url": detail_url})
