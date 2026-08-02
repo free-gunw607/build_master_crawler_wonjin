@@ -50,7 +50,7 @@ SOURCE_BOARD_URL = {
     "DCCO": "https://www.dcco.kr/web/board/list.do?mId=37&ts_categoryradio=1",
     "SCTC": "https://www.sctc.kr/bbs/BBSS2110052040247196",
     "JNDC": "https://www.jndc.co.kr/web/main/bbs/parcelout",
-    "IH": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+    "IH": "https://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
     "GDCO": "https://www.gdco.co.kr/customer/notice_list.php?strBoardID=NOTI",
     "CBDC": "https://www.cbdc.co.kr/zboard/list.do?lmCode=BBSMSTR_000000000028",
     "GMCC": "https://www.gmcc.co.kr/board.es?mid=a10402030000&bid=0018&cg_code=C03",
@@ -983,6 +983,8 @@ def crawl_ih(from_date: date) -> tuple[list[Notice], list[dict[str, str]]]:
     response = None
     last_error: Exception | None = None
     for candidate in (
+        "https://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
+        "http://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
         "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
         "http://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
     ):

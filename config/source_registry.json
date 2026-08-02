@@ -59,13 +59,13 @@
       "source_id": "IH",
       "region": "인천",
       "display_name": "인천도시공사",
-      "url": "https://www.ih.co.kr/main/sale_lease/board/land_notice.jsp",
+      "url": "https://www.ih.co.kr/main/bbs/bbsMsgList.do?bcd=sale_lease&cate1=b&pgdiv=land_notice&pgno=1",
       "keywords": ["공고"],
       "enabled": true,
       "status": "active_v2",
       "production_approved": true,
       "parser_family": "server_board_href",
-      "notes": "Production revalidation uses HTTPS with HTTP fallback because the HTTPS endpoint intermittently resets or times out from CI."
+      "notes": "Uses the current bbsMsgList endpoint with legacy land_notice.jsp and HTTP fallbacks; the old route intermittently resets or times out from CI."
     },
     {
       "source_id": "BMC",
